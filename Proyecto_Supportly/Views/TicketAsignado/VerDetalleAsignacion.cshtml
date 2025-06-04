@@ -1,0 +1,299 @@
+﻿@{
+    ViewBag.Title = "Detalle de Ticket Asignado";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
+
+    var ticket = ViewBag.Ticket as Proyecto_Supportly.Models.Tickets;
+    var usuarioAsignadoNombre = ViewBag.UsuarioAsignadoNombre as string;
+    var usuarioSegundoAsignadoNombre = ViewBag.UsuarioSegundoAsignadoNombre as string;
+    var usuarioCreador = ViewBag.UsuarioCreador as Proyecto_Supportly.Models.Usuarios;
+    var categoriaNombre = ViewBag.CategoriaNombre as string;
+    var archivosAdjuntos = ViewBag.ArchivosAdjuntos as List<string>;
+    var prioridad = ticket?.Prioridad;
+    var progreso = ViewBag.Progreso != null ? (int)ViewBag.Progreso : 0;
+    var usuariosInternosDisponibles = ViewBag.UsuariosInternosDisponibles as IEnumerable<SelectListItem>;
+}
+
+<style>
+    /* Fondo degradado general */
+    body, .main-content {
+        background: linear-gradient(135deg, #e0f7fa 0%, #f3e5f5 100%);
+    }
+
+    .back-arrow {
+        font-size: 1.5em;
+        color: #5c6bc0;
+        text-decoration: none;
+        margin-bottom: 15px;
+        display: inline-block;
+    }
+
+    .main-content {
+        padding: 30px;
+        border-radius: 8px;
+        margin-top: 20px;
+        background-color: rgba(255,255,255,0.8);
+    }
+
+    .ticket-header h2 {
+        color: #4a148c;
+        font-size: 1.9rem;
+        margin-bottom: 15px;
+    }
+
+    .alert-container .alert {
+        border-radius: 4px;
+    }
+
+    .ticket-details {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+    }
+
+        .ticket-details p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .ticket-details strong {
+            color: #333;
+        }
+
+    .priority-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: white;
+        font-weight: 600;
+    }
+
+    .priority-baja {
+        background-color: #388e3c;
+    }
+
+    .priority-media {
+        background-color: #fbc02d;
+    }
+
+    .priority-alta {
+        background-color: #c62828;
+    }
+
+    .progress-bar-container {
+        background-color: #e0e0e0;
+        border-radius: .25rem;
+        margin-bottom: 15px;
+        height: 20px;
+    }
+
+    .progress-bar-custom {
+        background-color: #5c6bc0;
+        height: 100%;
+        color: white;
+        text-align: center;
+        border-radius: .25rem;
+        line-height: 20px;
+    }
+
+    .second-assignment {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+        .second-assignment h4 {
+            color: #4a148c;
+            margin-bottom: 15px;
+        }
+
+        .second-assignment .form-inline .form-group label {
+            font-weight: 600;
+            margin-right: 8px;
+            color: #333;
+        }
+
+        .second-assignment .form-control {
+            width: 250px;
+        }
+
+    /* Botón “Asignar Segundo Empleado” estilo degradado */
+    .btn-assign-secondary {
+        background: linear-gradient(90deg, #7e57c2, #5c6bc0);
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+        .btn-assign-secondary:hover {
+            background: linear-gradient(90deg, #9575cd, #7986cb);
+        }
+
+    .file-link {
+        color: #5c6bc0;
+        text-decoration: underline;
+    }
+</style>
+
+<div class="main-content">
+    <a href="javascript:history.back()" class="back-arrow" title="Volver a la lista">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+
+    @if (ticket != null)
+    {
+        <div class="ticket-header">
+            <h2>Ticket #@ticket.TicketID</h2>
+        </div>
+
+        <div class="alert-container">
+            @if (TempData["Exito"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Exito"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    @TempData["InfoMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div class="ticket-details">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Aplicación/Servicio:</strong> @categoriaNombre</p>
+                    <p><strong>Descripción:</strong></p>
+                    <p>@Html.Raw(ticket.Descripcion?.Replace("\n", "<br/>"))</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Detalles de contacto (Creador):</strong></p>
+                    @if (usuarioCreador != null)
+                    {
+                        <p>
+                            Nombre: @usuarioCreador.Nombre<br />
+                            Email: @Html.ActionLink(usuarioCreador.Email, "mailto:" + usuarioCreador.Email)<br />
+                            Teléfono: @(usuarioCreador.Telefono ?? "No disponible")
+                        </p>
+                    }
+                    else
+                    {
+                        <p>Información del creador no disponible.</p>
+                    }
+
+                    <p><strong>Archivos:</strong></p>
+                    @if (archivosAdjuntos != null && archivosAdjuntos.Any())
+                    {
+                        @foreach (var archivo in archivosAdjuntos)
+                        {
+                            <p>
+                                <a href="@archivo" target="_blank" class="file-link">
+                                    @System.IO.Path.GetFileName(archivo)
+                                </a>
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <p>No hay archivos adjuntos.</p>
+                    }
+
+                    <p>
+                        <strong>Prioridad:</strong>
+                        <span class="priority-badge @(prioridad.ToLower() == "alta"
+                            ? "priority-alta"
+                            : prioridad.ToLower() == "media"
+                                ? "priority-media"
+                                : "priority-baja")">
+                            @prioridad
+                        </span>
+                    </p>
+
+                    <p><strong>Estado del Ticket:</strong> @ViewBag.EstadoNombre</p>
+
+                    <p><strong>Progreso:</strong></p>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-custom" style="width:@progreso%;">@progreso%</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr />
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <p><strong>Responsable Principal:</strong> @usuarioAsignadoNombre</p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Segundo Empleado:</strong>
+                        @if (!string.IsNullOrEmpty(usuarioSegundoAsignadoNombre))
+                        {
+                            @usuarioSegundoAsignadoNombre
+                        }
+                        else
+                        {
+                            <em>(No hay segundo asignado)</em>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="second-assignment">
+            <h4>Asignar / Reemplazar Segundo Empleado</h4>
+
+            @using (Html.BeginForm("AsignarSegundoEmpleado", "TicketAsignado", FormMethod.Post, new { @class = "form-inline" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Hidden("ticketId", ticket.TicketID)
+
+                <div class="form-group">
+                    @Html.Label("usuarioAsignadoId", "Empleado Interno:")
+                    @Html.DropDownList(
+                             "usuarioAsignadoId",
+                             usuariosInternosDisponibles,
+                             "Seleccione un usuario",
+                             new { @class = "form-control ml-2" }
+                             )
+                </div>
+
+                <button type="submit" class="btn-assign-secondary ml-3">Asignar</button>
+            }
+        </div>
+    }
+    else
+    {
+        <p>El ticket solicitado no se encontró o no se pudo cargar la información.</p>
+    }
+</div>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+@* Bootstrap JS para que data-dismiss funcione *@
+    <script>
+        $(document).ready(function () {
+            $('.alert').alert();
+        });
+    </script>
+}

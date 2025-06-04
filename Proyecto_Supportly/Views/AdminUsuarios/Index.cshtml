@@ -1,0 +1,216 @@
+﻿@{
+    ViewBag.Title = "Administración de Usuarios";
+    // Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var usuarios = ViewBag.Usuarios as List<Proyecto_Supportly.Models.Usuarios>;
+    var rolesMap = ViewBag.RolesMap as Dictionary<int, string>;
+    int refCounter = ViewBag.UserRefStart ?? 1;
+}
+
+<style>
+    .admin-user-header {
+        background-color: #4a4e69;
+        padding: 10px 20px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .admin-user-header .nav-links a {
+            color: #f2e9e4;
+            margin-left: 15px;
+            text-decoration: none;
+        }
+
+            .admin-user-header .nav-links a:hover {
+                color: white;
+            }
+
+        .admin-user-header .sign-out-btn {
+            background-color: #8d99ae;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+    .admin-user-container {
+        padding: 20px;
+        background-color: #edf2f4;
+    }
+
+    .admin-actions-bar {
+        margin-bottom: 20px;
+    }
+
+        .admin-actions-bar .btn {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+    .btn-internal {
+        background-color: #007bff;
+    }
+
+    .btn-external {
+        background-color: #6c757d;
+    }
+
+    .user-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+    }
+
+        .user-table th, .user-table td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .user-table th {
+            background-color: #343a40;
+            color: white;
+        }
+
+    .btn-action {
+        padding: 5px 10px;
+        margin-right: 5px;
+        border-radius: 3px;
+        color: white;
+        text-decoration: none;
+        font-size: 0.9em;
+    }
+
+    .btn-assign {
+        background-color: #17a2b8;
+    }
+
+    .btn-edit {
+        background-color: #ffc107;
+        color: #212529 !important;
+    }
+
+    .btn-delete {
+        background-color: #dc3545;
+    }
+
+    .status-active {
+        color: green;
+        font-weight: bold;
+    }
+
+    .status-inactive {
+        color: red;
+    }
+</style>
+
+<div class="admin-user-container">
+    <h2>Administración de Usuarios</h2>
+
+    @if (TempData["Message"] != null)
+    {
+        <div class="alert alert-info">@TempData["Message"]</div>
+    }
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="admin-actions-bar">
+        @Html.ActionLink("Añadir Usuario Interno", "CrearUsuarioInterno", "AdminUsuarios", null, new { @class = "btn btn-internal" })
+        @Html.ActionLink("Añadir Usuario Externo", "CrearUsuarioExterno", "AdminUsuarios", null, new { @class = "btn btn-external" })
+    </div>
+
+    <table class="user-table">
+        <thead>
+            <tr>
+                <th>Ref#</th>
+                <th>Nombre de Usuario</th>
+                <th>Tipo</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Asignar/Cambiar Permisos</th>
+                <th>Editar</th>
+                <th>Borrar</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (usuarios != null && usuarios.Any())
+            {
+                foreach (var usuario in usuarios)
+                {
+                    <tr>
+                        <td>@(refCounter++)</td>
+                        <td>@usuario.Nombre</td>
+                        <td>@usuario.TipoUsuario</td>
+                        <td>@usuario.Email</td>
+                        <td>@(rolesMap.ContainsKey(usuario.RolID) ? rolesMap[usuario.RolID] : "N/A")</td>
+                        <td>
+                            @if (usuario.EstadoUsuario)
+                            {
+                                <span class="status-active">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="status-inactive">Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            @Html.ActionLink(
+                                     "Asignar",
+                                     "AsignarPermisos",
+                                     "AdminUsuarios",
+                                     new { id = usuario.UsuarioID },
+                                     new { @class = "btn-action btn-assign" }
+                                     )
+                        </td>
+                        <td>
+                            @{
+                                // Redirigir a la acción de edición según el tipo de usuario
+                                var editAction = usuario.TipoUsuario == "Interno"
+                                ? "EdicionUsuarioInterno"
+                                : "EdicionUsuarioExterno";
+                            }
+                            @Html.ActionLink(
+                                     "Editar",
+                                     editAction,
+                                     "AdminUsuarios",
+                                     new { id = usuario.UsuarioID },
+                                     new { @class = "btn-action btn-edit" }
+                                     )
+                        </td>
+                        <td>
+                            @using (Html.BeginForm("Delete", "AdminUsuarios", new { id = usuario.UsuarioID }, FormMethod.Post, false, new { @style = "display:inline;" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <button type="submit"
+                                        class="btn-action btn-delete"
+                                        onclick="return confirm('¿Está seguro de que desea eliminar este usuario: @usuario.Nombre? Esta acción no se puede deshacer.');">
+                                    Eliminar
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="9">No hay usuarios registrados.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

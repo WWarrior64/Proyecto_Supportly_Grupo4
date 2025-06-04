@@ -1,0 +1,377 @@
+﻿@{
+    ViewData["Title"] = $"Ticket de Soporte #{ViewBag.TicketId}";
+
+    // Recuperar datos de ViewBag
+    var ticketId = (int)ViewBag.TicketId;
+    var ticketTitle = ViewBag.TicketTitle as string;
+    var creationDate = ViewBag.CreationDate as string;
+    var ticketPriority = ViewBag.TicketPriority as string;
+    var ticketStatus = ViewBag.TicketStatus as string;
+    var chatMessages = ViewBag.ChatMessages as List<dynamic> ?? new List<dynamic>();
+    var companyName = ViewBag.CompanyName as string;
+    var userLoggedInName = ViewBag.UserLoggedInName as string;
+    var sessionUserId = (int)ViewBag.SessionUserId; // ID del usuario en sesión
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+          integrity="sha512-1ycn6IcaQQ40JuKCqigSyOXoligTfP4K1m5b2R0eB4o3gN6l9x5L3f06wR5gM4uC/L9o0b4m0n0F0Z0M0L0A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Body y contenedores generales */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Barra superior */
+        .page-header-nav {
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+            .page-header-nav .logo-area {
+                display: flex;
+                align-items: center;
+            }
+
+                .page-header-nav .logo-area .logo-icon {
+                    font-size: 24px;
+                    color: #6200ea;
+                    margin-right: 8px;
+                }
+
+                .page-header-nav .logo-area span {
+                    color: #333;
+                    font-size: 1.2em;
+                    font-weight: bold;
+                }
+
+            .page-header-nav .nav-links {
+                display: flex;
+                gap: 25px;
+            }
+
+                .page-header-nav .nav-links a {
+                    color: #555;
+                    text-decoration: none;
+                    font-size: 1.1em;
+                    padding: 5px 0;
+                }
+
+                    .page-header-nav .nav-links a:hover {
+                        color: #6200ea;
+                    }
+
+            .page-header-nav .user-actions {
+                display: flex;
+                align-items: center;
+            }
+
+                .page-header-nav .user-actions .bell-icon {
+                    font-size: 20px;
+                    color: #555;
+                    margin-right: 15px;
+                    position: relative;
+                }
+
+                .page-header-nav .user-actions .sign-out-btn {
+                    background-color: #6200ea;
+                    color: white;
+                    padding: 8px 15px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+
+                    .page-header-nav .user-actions .sign-out-btn:hover {
+                        background-color: #3700b3;
+                    }
+
+        /* Contenedor principal */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            max-width: 900px;
+            margin: 30px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Información del ticket */
+        .ticket-info {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+            .ticket-info .info-item {
+                flex: 1 1 45%;
+                margin-bottom: 10px;
+                color: #555;
+                font-size: 0.95em;
+            }
+
+                .ticket-info .info-item strong {
+                    color: #333;
+                    margin-right: 5px;
+                }
+
+                .ticket-info .info-item.full-width {
+                    flex-basis: 100%;
+                    font-size: 1.2em;
+                    font-weight: bold;
+                    color: #333;
+                    margin-bottom: 15px;
+                }
+
+        /* Chat Box */
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fdfdfd;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message-bubble {
+            padding: 12px 18px;
+            border-radius: 20px;
+            max-width: 75%;
+            word-wrap: break-word;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+            .message-bubble .sender-info {
+                font-size: 0.8em;
+                color: #777;
+                margin-bottom: 5px;
+            }
+
+            .message-bubble.user {
+                background-color: #e0f2f7;
+                color: #333;
+                align-self: flex-end;
+                border-bottom-right-radius: 5px;
+            }
+
+                .message-bubble.user .sender-info {
+                    text-align: right;
+                }
+
+            .message-bubble.support {
+                background-color: #f0f0f0;
+                color: #333;
+                align-self: flex-start;
+                border-bottom-left-radius: 5px;
+            }
+
+                .message-bubble.support .sender-info {
+                    text-align: left;
+                }
+
+            .message-bubble .message-content {
+                font-size: 1em;
+                line-height: 1.4;
+                color: #333;
+            }
+
+            .message-bubble .screenshot-link {
+                display: block;
+                margin-top: 10px;
+                color: #6200ea;
+                text-decoration: none;
+                word-break: break-all;
+            }
+
+                .message-bubble .screenshot-link:hover {
+                    text-decoration: underline;
+                }
+
+        /* Sección de respuesta */
+        .reply-section {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+            .reply-section textarea {
+                width: 100%;
+                height: 80px;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 1em;
+                resize: vertical;
+                margin-bottom: 15px;
+            }
+
+        .reply-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .btn-reply {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-send {
+            background-color: #6200ea;
+            color: white;
+            flex-grow: 1;
+        }
+
+            .btn-send:hover {
+                background-color: #3700b3;
+            }
+
+        .btn-attach {
+            background-color: #03a9f4;
+            color: white;
+            flex-grow: 0.5;
+        }
+
+            .btn-attach:hover {
+                background-color: #0288d1;
+            }
+
+        /* Botón cerrar */
+        .btn-close-ticket {
+            background-color: #e57373;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+            .btn-close-ticket:hover {
+                background-color: #d32f2f;
+            }
+
+        /* Pie de página (opcional) */
+        .page-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #888;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-content">
+        @* --- Información del ticket --- *@
+        <div class="ticket-info">
+            <div class="info-item full-width">
+                Ticket de Soporte #@ticketId – @ticketTitle
+            </div>
+            <div class="info-item">
+                <strong>Prioridad:</strong> @ticketPriority
+            </div>
+            <div class="info-item">
+                <strong>Creado:</strong> @creationDate
+            </div>
+            <div class="info-item">
+                <strong>Estado:</strong> @ticketStatus
+            </div>
+        </div>
+
+        @* --- Chat Box: burbujas de mensajes --- *@
+        <div class="chat-box">
+            @foreach (var message in chatMessages)
+            {
+                <div class="message-bubble @(message.IsUserMessage ? "user" : "support")">
+                    <div class="sender-info">
+                        @(message.IsUserMessage ? "Tú" : message.SenderName): @message.Timestamp
+                    </div>
+                    <div class="message-content">
+                        @if (message.Content.StartsWith("SCREENSHOT:"))
+                        {
+                            var url = message.Content.Substring("SCREENSHOT:".Length);
+                            <a href="@url" target="_blank" class="screenshot-link">@url</a>
+                        }
+                        else
+                        {
+                            @Html.Raw(message.Content)
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* --- Formulario para enviar un nuevo comentario --- *@
+        <div class="reply-section">
+            @using (Html.BeginForm("SendMessage", "TicketChat", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ticketId" value="@ticketId" />
+                <input type="hidden" name="userId" value="@sessionUserId" />
+
+                <textarea name="messageContent" placeholder="Escriba su mensaje aquí..." required></textarea>
+
+                <div class="reply-buttons">
+                    <button type="submit" class="btn-reply btn-send">Enviar</button>
+                    <button type="button" class="btn-reply btn-attach">Añadir screenshot</button>
+                </div>
+            }
+        </div>
+
+        @* --- Botón para cerrar el ticket --- *@
+        <div class="reply-section">
+            @using (Html.BeginForm("CloseTicket", "TicketChat", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ticketId" value="@ticketId" />
+                <input type="hidden" name="userId" value="@sessionUserId" />
+                <button type="submit" class="btn-close-ticket">Cerrar Ticket</button>
+            }
+        </div>
+    </div>
+</body>
+</html>

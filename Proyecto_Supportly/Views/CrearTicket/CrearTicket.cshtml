@@ -1,0 +1,306 @@
+﻿@model Proyecto_Supportly.Models.Tickets
+@{
+    ViewBag.Title = ViewBag.Title ?? "Crear Nuevo Ticket";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml"; // Ensure this path is correct for your project
+
+    // User data from ViewBag
+    var usuarioNombres = ViewBag.UsuarioNombres as string;
+    var usuarioEmail = ViewBag.UsuarioEmail as string;
+    var usuarioTelefono = ViewBag.UsuarioTelefono as string;
+    var usuarioCreadorID = (int)ViewBag.UsuarioCreadorID;
+
+    // Dropdown lists from ViewBag
+    var areasList = ViewBag.AreasList as SelectList;
+    var prioridadesList = ViewBag.PrioridadesList as SelectList;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40JuKCqigSyOXoligTfP4K1m5b2R0eB4o3gN6l9x5L3f06wR5gM4uC/L9o0b4m0n0F0Z0M0L0A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Shared Header/Navigation Styles (from previous examples) */
+        .page-header-nav {
+            background-color: #fff; /* White background for nav */
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            color: #333; /* Darker text for nav */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Subtle shadow */
+        }
+
+            .page-header-nav .logo-area {
+                display: flex; /* To align icon and text */
+                align-items: center;
+            }
+
+                .page-header-nav .logo-area .logo-icon {
+                    font-size: 24px; /* Adjust size as needed */
+                    color: #6200ea; /* Purple color for icon */
+                    margin-right: 8px;
+                }
+
+                .page-header-nav .logo-area a {
+                    color: #333;
+                    text-decoration: none;
+                    font-size: 1.5em;
+                    font-weight: bold;
+                }
+
+            .page-header-nav .nav-links a {
+                color: #555;
+                margin-left: 25px; /* Increase spacing */
+                text-decoration: none;
+                font-size: 1.1em;
+                padding: 5px 0; /* Add padding for clickable area */
+            }
+
+                .page-header-nav .nav-links a:hover {
+                    color: #6200ea; /* Purple on hover */
+                }
+
+            .page-header-nav .user-actions {
+                display: flex;
+                align-items: center;
+            }
+
+                .page-header-nav .user-actions .bell-icon {
+                    font-size: 20px;
+                    color: #555;
+                    margin-right: 15px;
+                }
+
+                .page-header-nav .user-actions .sign-out-btn {
+                    background-color: #6200ea; /* Purple from your image */
+                    color: white;
+                    padding: 8px 15px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+
+                    .page-header-nav .user-actions .sign-out-btn:hover {
+                        background-color: #3700b3;
+                    }
+
+        /* Specific styles for Create Ticket page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5; /* Light grey background */
+            margin: 0;
+            padding: 0;
+            display: block; /* Override flex from previous example if layout is not full page */
+        }
+
+        .main-content {
+            padding: 20px;
+            max-width: 800px; /* Adjust max-width as needed */
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .ticket-header {
+            text-align: left;
+            margin-bottom: 25px;
+        }
+
+            .ticket-header h2 {
+                color: #333;
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+
+            .ticket-header p {
+                color: #666;
+                font-size: 16px;
+                line-height: 1.5;
+                margin-bottom: 10px;
+            }
+
+        .form-row {
+            display: flex;
+            gap: 20px; /* Space between columns */
+            margin-bottom: 15px;
+        }
+
+            .form-row .form-group {
+                flex: 1; /* Distribute space evenly */
+                margin-bottom: 0; /* Override default form-group margin */
+            }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+            .form-group label {
+                font-weight: bold;
+                color: #555;
+                display: block;
+                margin-bottom: 8px;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box; /* Include padding in width */
+            background-color: #f8f8f8;
+        }
+
+            .form-control:focus {
+                border-color: #6200ea;
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.2);
+            }
+
+        textarea.form-control {
+            resize: vertical; /* Allow vertical resizing */
+            min-height: 120px;
+        }
+
+        .text-danger {
+            color: #dc3545;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: flex-start; /* Align buttons to the left */
+            gap: 15px; /* Space between buttons */
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #6200ea; /* Purple */
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background-color: #3700b3; /* Darker purple */
+            }
+
+        .btn-secondary {
+            background-color: #e0e0e0; /* Light grey */
+            color: #333;
+        }
+
+            .btn-secondary:hover {
+                background-color: #cccccc;
+            }
+
+        .validation-summary-errors {
+            color: #dc3545;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-content">
+        <div class="ticket-header">
+            <h2>Crear nuevo ticket de soporte</h2>
+            <p>
+                Puede enviar una solicitud de soporte a nuestro personal completando los campos a continuación.
+                No envíe varias solicitudes para la misma consulta; no dude en enviar respuestas adicionales a una solicitud abierta.
+            </p>
+            <p>
+                Por favor, describa detalladamente su consulta para que podamos ayudarle lo antes posible.
+                Incluya la información pertinente en su solicitud.
+            </p>
+        </div>
+
+        @* Muestra errores de modelo en conjunto *@
+        @Html.ValidationSummary(excludePropertyErrors: false, message: "", htmlAttributes: new { @class = "text-danger validation-summary-errors" })
+
+        @using (Html.BeginForm("CrearTicket", "CrearTicket", FormMethod.Post, new { autocomplete = "off" }))
+        {
+            @Html.AntiForgeryToken()
+            @Html.Hidden("UsuarioCreadorID", usuarioCreadorID) @* Pass the UserID from ViewBag as a hidden field **@
+
+            <div class="form-row">
+                <div class="form-group">
+                    @Html.Label("Nombre Completo", "Nombre Completo")
+                    @Html.TextBox("Nombres", usuarioNombres, new { @class = "form-control", @readonly = "readonly", placeholder = "Datos del usuario que se sacaran del inicio de seccion" }) @* Data from session*@
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    @Html.Label("CorreoElectronico", "Correo electrónico")
+                    @Html.TextBox("CorreoElectronico", usuarioEmail, new { @class = "form-control", type = "email", @readonly = "readonly", placeholder = "Datos del usuario que se sacaran del inicio de seccion" }) @* Data from session*@
+                </div>
+                <div class="form-group">
+                    @Html.Label("Telefono", "Teléfono")
+                    @Html.TextBox("Telefono", usuarioTelefono, new { @class = "form-control", @readonly = "readonly", placeholder = "Datos del usuario que se sacaran del inicio de seccion" }) @* Data from session*@
+                </div>
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.Titulo, "Nombre del Ticket") @* This is the "Nombre del Ticket" in the image*@
+                @Html.TextBoxFor(model => model.Titulo, new { @class = "form-control", placeholder = "Nombre del Ticket puede ser el referenciado a lo que necesita" })
+                @Html.ValidationMessageFor(model => model.Titulo, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.CategoriaID, "Seleccione al área a la que aplica")
+                @Html.DropDownList("Area", areasList, "-- Seleccione un área --", new { @class = "form-control" }) @* "Area" as parameter name for FormCollection*@
+                @Html.ValidationMessageFor(model => model.CategoriaID, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.Prioridad, "Seleccione la prioridad")
+                @Html.DropDownListFor(model => model.Prioridad, prioridadesList, "-- Seleccione la prioridad --", new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.Prioridad, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(model => model.Descripcion, "Describa de manera detallada para que un miembro del soporte le pueda ayudar")
+                @Html.TextAreaFor(model => model.Descripcion, new { @class = "form-control", rows = 6, placeholder = "TextArea con el cual se puede especificar a detalle el ticket de soporte" })
+                @Html.ValidationMessageFor(model => model.Descripcion, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Enviar Ticket</button>
+                <button type="button" class="btn btn-secondary" onclick="openScreenshotUploader()">Añadir screenshot</button>
+            </div>
+        }
+    </div>
+
+    @section Scripts {
+        <script src="~/Scripts/jquery-3.6.0.min.js"></script> @* Ensure this path is correct **@
+        <script src="~/Scripts/jquery.validate.min.js"></script> @* Ensure this path is correct **@
+        <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script> @* Ensure this path is correct **@
+
+        <script>
+            function openScreenshotUploader() {
+                alert('Se abrirá una ventana para subir imágenes. En una implementación real, esto sería un modal o una nueva página.');
+                // Here you would implement the logic to open a file upload dialog or a new page/modal
+                // For example: window.open('/Upload/Screenshot', '_blank');
+            }
+        </script>
+    }
+</body>
+</html>

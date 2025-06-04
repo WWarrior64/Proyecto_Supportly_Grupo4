@@ -1,0 +1,281 @@
+﻿@{
+    // No @model directive as requested, relying on ViewBag
+    ViewBag.Title = ViewBag.Title ?? "Asignación de Permisos";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
+
+    var allPermissions = ViewBag.AllPermissions as List<Proyecto_Supportly.Models.Permisos>;
+    var assignedPermissionIDs = ViewBag.AssignedPermissionIDs as List<int>;
+    var userId = (int)ViewBag.UsuarioID;
+    var userName = (string)ViewBag.UsuarioNombre;
+
+    // Ensure lists are not null
+    if (allPermissions == null) { allPermissions = new List<Proyecto_Supportly.Models.Permisos>(); }
+    if (assignedPermissionIDs == null) { assignedPermissionIDs = new List<int>(); }
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <style>
+        /* Reusing styles from previous examples and adding specific ones for the table */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .form-container-card {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 900px; /* Wider for the table */
+            margin: 20px auto;
+        }
+
+        .page-header-nav {
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+            .page-header-nav .logo-area {
+                display: flex;
+                align-items: center;
+            }
+
+                .page-header-nav .logo-area .logo-icon {
+                    font-size: 24px;
+                    color: #6200ea;
+                    margin-right: 8px;
+                }
+
+                .page-header-nav .logo-area a {
+                    color: #333;
+                    text-decoration: none;
+                    font-size: 1.5em;
+                    font-weight: bold;
+                }
+
+            .page-header-nav .nav-links a {
+                color: #555;
+                margin-left: 25px;
+                text-decoration: none;
+                font-size: 1.1em;
+                padding: 5px 0;
+            }
+
+                .page-header-nav .nav-links a:hover {
+                    color: #6200ea;
+                }
+
+            .page-header-nav .user-actions {
+                display: flex;
+                align-items: center;
+            }
+
+                .page-header-nav .user-actions .bell-icon {
+                    font-size: 20px;
+                    color: #555;
+                    margin-right: 15px;
+                }
+
+                .page-header-nav .user-actions .sign-out-btn {
+                    background-color: #6200ea;
+                    color: white;
+                    padding: 8px 15px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+
+                    .page-header-nav .user-actions .sign-out-btn:hover {
+                        background-color: #3700b3;
+                    }
+
+        .page-title-container {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            color: #333;
+        }
+
+        /* Table specific styles */
+        .permissions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+            .permissions-table th,
+            .permissions-table td {
+                border: 1px solid #e0e0e0;
+                padding: 12px;
+                text-align: left;
+            }
+
+            .permissions-table th {
+                background-color: #f8f8f8;
+                font-weight: bold;
+                color: #555;
+            }
+
+            .permissions-table tbody tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+
+            .permissions-table tbody tr:hover {
+                background-color: #f1f1f1;
+            }
+
+            .permissions-table td.checkbox-cell {
+                text-align: center;
+                width: 100px; /* Fixed width for checkbox columns */
+            }
+
+            .permissions-table input[type="checkbox"] {
+                transform: scale(1.2); /* Slightly larger checkboxes */
+                margin: 0;
+                cursor: pointer;
+            }
+
+        .button-row {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            text-decoration: none;
+            display: inline-block; /* For ActionLink */
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: #6200ea;
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background-color: #3700b3;
+            }
+
+        .btn-secondary {
+            background-color: #ddd;
+            color: #333;
+        }
+
+            .btn-secondary:hover {
+                background-color: #ccc;
+            }
+
+        .btn-select-all {
+            background-color: #007bff; /* Blue as in your image */
+            color: white;
+        }
+
+            .btn-select-all:hover {
+                background-color: #0056b3;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="page-title-container">
+        <h2>Asignación de Permisos para @userName</h2>
+    </div>
+
+    <div class="form-container-card">
+        @using (Html.BeginForm("AsignarPermisos", "AdminUsuarios", new { id = userId }, FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+            @Html.Hidden("UsuarioID", userId) @* Hidden field to pass UserId to POST action *@
+
+            <table class="permissions-table">
+                <thead>
+                    <tr>
+                        <th>OPCIÓN</th>
+                        <th class="checkbox-cell">PERMITIDO</th>
+                        <th class="checkbox-cell">NO PERMITIDO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var permiso in allPermissions)
+                    {
+                        var isPermitted = assignedPermissionIDs.Contains(permiso.PermisoID);
+                        <tr>
+                            <td>@permiso.Nombre</td>
+                            <td class="checkbox-cell">
+                                @Html.CheckBox("Permitido_" + permiso.PermisoID, isPermitted, new { data_permisoid = permiso.PermisoID, @class = "permitido-checkbox" })
+                            </td>
+                            <td class="checkbox-cell">
+                                @Html.CheckBox("NoPermitido_" + permiso.PermisoID, !isPermitted, new { data_permisoid = permiso.PermisoID, @class = "nopermitido-checkbox" })
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="button-row">
+                <button type="button" id="selectAllPermissionsBtn" class="btn btn-select-all">Seleccionar todos los Permisos</button>
+                <div>
+                    <button type="submit" class="btn btn-primary">Aceptar</button>
+                    @Html.ActionLink("Cancelar", "Index", "AdminUsuarios", null, new { @class = "btn btn-secondary" })
+                </div>
+            </div>
+        }
+    </div>
+
+    @section Scripts {
+        <script>
+            $(document).ready(function () {
+                // Handle "Permitido" checkbox change
+                $('.permitido-checkbox').change(function () {
+                    var permisoId = $(this).data('permisoid');
+                    var noPermitidoCheckbox = $('[name="NoPermitido_' + permisoId + '"]');
+                    if ($(this).is(':checked')) {
+                        noPermitidoCheckbox.prop('checked', false); // Uncheck "No Permitido" if "Permitido" is checked
+                    } else {
+                        noPermitidoCheckbox.prop('checked', true); // Check "No Permitido" if "Permitido" is unchecked
+                    }
+                });
+
+                // Handle "No Permitido" checkbox change
+                $('.nopermitido-checkbox').change(function () {
+                    var permisoId = $(this).data('permisoid');
+                    var permitidoCheckbox = $('[name="Permitido_' + permisoId + '"]');
+                    if ($(this).is(':checked')) {
+                        permitidoCheckbox.prop('checked', false); // Uncheck "Permitido" if "No Permitido" is checked
+                    } else {
+                        permitidoCheckbox.prop('checked', true); // Check "Permitido" if "No Permitido" is unchecked
+                    }
+                });
+
+                // Handle "Seleccionar todos los Permisos" button click
+                $('#selectAllPermissionsBtn').click(function () {
+                    // Check all "Permitido" checkboxes and uncheck all "No Permitido" checkboxes
+                    $('.permitido-checkbox').prop('checked', true);
+                    $('.nopermitido-checkbox').prop('checked', false);
+                });
+            });
+        </script>
+    }
+</body>
+</html>

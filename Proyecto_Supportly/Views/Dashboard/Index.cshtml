@@ -1,0 +1,365 @@
+﻿@* File: Proyecto_Supportly/Views/Dashboard/Index.cshtml *@
+@{
+    ViewBag.Title = "Dashboard de Tickets";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
+}
+
+<style>
+    /* Custom styles for the dashboard elements */
+    .dashboard-card {
+        background-color: #fff;
+        margin-bottom: 30px; /* Aumentamos separación entre cartas */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        height: 100%;
+        text-align: center;
+    }
+
+        .dashboard-card .card-body {
+            padding: 1.25rem;
+        }
+
+        .dashboard-card .card-title {
+            font-size: 1.1rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-card .card-text {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #343a40;
+        }
+
+        .dashboard-card.small-card .card-text {
+            font-size: 1.8rem;
+        }
+
+    .filter-buttons .btn {
+        margin-right: 5px;
+        margin-bottom: 10px;
+    }
+
+    .chart-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+        height: 300px;
+        position: relative;
+        /* 1) Hacemos que el contenedor recorte cualquier overflow */
+        overflow: hidden;
+    }
+
+        .chart-container canvas {
+            /* 2) Limitamos el ancho/alto máximo al 100% del contenedor */
+            max-width: 100% ;
+            max-height: 100%;
+            width: 100%;
+            height: 100%;
+        }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Datos de tickets del año actual</h2>
+        <button class="btn btn-primary-custom">Vista Tickets</button>
+    </div>
+
+    @using (Html.BeginForm("Index", "Dashboard", FormMethod.Get, new { @class = "form-inline mb-4" }))
+    {
+        <div class="filter-buttons d-flex flex-wrap align-items-center">
+            <button type="submit" name="filterType" value="Tendencias"
+                    class="btn @(ViewBag.SelectedFilterType == "Tendencias"
+                                  ? "btn-primary-custom" : "btn-outline-secondary")">
+                Tendencias
+            </button>
+            <button type="submit" name="filterType" value="Empleados"
+                    class="btn @(ViewBag.SelectedFilterType == "Empleados"
+                                  ? "btn-primary-custom" : "btn-outline-secondary")">
+                Empleados
+            </button>
+            <button type="submit" name="filterType" value="Mes"
+                    class="btn @(ViewBag.SelectedFilterType == "Mes"
+                                  ? "btn-primary-custom" : "btn-outline-secondary")">
+                Mes
+            </button>
+            <button type="submit" name="filterType" value="Personalizado"
+                    class="btn @(ViewBag.SelectedFilterType == "Personalizado"
+                                  ? "btn-primary-custom" : "btn-outline-secondary")">
+                Personalizado
+            </button>
+
+            @* ==== Bloque “Empleados” ==== *@
+            @if (ViewBag.SelectedFilterType == "Empleados")
+            {
+                @* IMPORTANTE: guardamos en hidden el filterType para que, al cambiar el dropdown, se envíe “Empleados” *@
+                <input type="hidden" name="filterType" value="Empleados" />
+
+                <span class="ml-2">
+                    @Html.DropDownList(
+                             "employeeId",
+                             (IEnumerable<SelectListItem>)ViewBag.AvailableEmployees,
+                             "Seleccionar Empleado",
+                             new { @class = "form-control", onchange = "this.form.submit();", id = "employeeId" })
+                </span>
+            }
+
+            @* ==== Bloque “Mes” ==== *@
+            @if (ViewBag.SelectedFilterType == "Mes")
+            {
+                @* IMPORTANTE: guardamos en hidden el filterType para que siga enviando “Mes” al cambiar valor *@
+                <input type="hidden" name="filterType" value="Mes" />
+
+                <span class="ml-2">
+                    @Html.DropDownList(
+                             "month",
+                             (IEnumerable<SelectListItem>)ViewBag.AvailableMonths,
+                             "Seleccionar Mes",
+                             new { @class = "form-control", onchange = "this.form.submit();", id = "month" })
+                </span>
+                <span class="ml-2">
+                    <input id="year"
+                           name="year"
+                           type="number"
+                           class="form-control"
+                           placeholder="Año"
+                           value="@(ViewBag.SelectedYear ?? DateTime.Now.Year)"
+                           onchange="this.form.submit();" />
+                </span>
+            }
+
+            @* ==== Bloque “Personalizado” ==== *@
+            @if (ViewBag.SelectedFilterType == "Personalizado")
+            {
+                @* IMPORTANTE: guardamos en hidden el filterType para que siga enviando “Personalizado” *@
+                <input type="hidden" name="filterType" value="Personalizado" />
+
+                <span class="ml-2">
+                    Fecha Inicio:
+                    <input id="startDate"
+                           name="startDate"
+                           type="date"
+                           class="form-control"
+                           value="@(ViewBag.CustomStartDate != null
+                            ? ((DateTime)ViewBag.CustomStartDate).ToString("yyyy-MM-dd")
+                            : "")" />
+                </span>
+                <span class="ml-2">
+                    Fecha Fin:
+                    <input id="endDate"
+                           name="endDate"
+                           type="date"
+                           class="form-control"
+                           value="@(ViewBag.CustomEndDate != null
+                            ? ((DateTime)ViewBag.CustomEndDate).ToString("yyyy-MM-dd")
+                            : "")" />
+                </span>
+                <button type="submit" class="btn btn-info ml-2">Aplicar</button>
+            }
+        </div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h5 class="card-title">Generados este año</h5>
+                    <p class="card-text">@ViewBag.TicketsGeneradosEsteAno</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h5 class="card-title">Atendidos este año</h5>
+                    <p class="card-text">@ViewBag.TicketsAtendidosEsteAno</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h5 class="card-title">Abiertos</h5>
+                    <p class="card-text">@ViewBag.TicketsAbiertos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <h5 class="card-title">En proceso</h5>
+                    <p class="card-text">@ViewBag.TicketsEnProceso</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Cerrados</h5>
+                    <p class="card-text">@ViewBag.TicketsCerrados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Tiempo prom. resolución</h5>
+                    <p class="card-text">@ViewBag.TiempoPromedioResolucion</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-3">Actualmente:</h5>
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Categoría de problema más común</h5>
+                    <p class="card-text" style="font-size: 1.5rem;">@ViewBag.MostCommonCategory</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Mes más productivo</h5>
+                    <p class="card-text">@ViewBag.MesMasProductivo</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-3">Tendencias Mensuales de Tickets</h5>
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Mes menos productivo</h5>
+                    <p class="card-text">@ViewBag.MesMenosProductivo</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Aprobación de clientes</h5>
+                    <p class="card-text">@ViewBag.ClientApprovalPercentage</p>
+                </div>
+            </div>
+        </div>
+        @* Rellenar columnas adicionales si es necesario *@
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // --- Pie Chart ---
+            var pieChartData = @Html.Raw(ViewBag.PieChartDataJson);
+            var pieLabels = pieChartData.map(item => item.label);
+            var pieValues = pieChartData.map(item => item.value);
+            var pieColors = pieChartData.map(item => item.color);
+
+            var ctxPie = document.getElementById('pieChart').getContext('2d');
+            new Chart(ctxPie, {
+                type: 'pie',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        data: pieValues,
+                        backgroundColor: pieColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    legend: {
+                        position: 'right',
+                        align: 'center',
+                        labels: { boxWidth: 20, padding: 15 }
+                    },
+                    tooltips: {
+                        callbacks: {
+                            label: function (tooltipItem, data) {
+                                var label = data.labels[tooltipItem.index] || '';
+                                if (label) label += ': ';
+                                label += data.datasets[tooltipItem.datasetIndex].data[tooltipItem.index];
+                                return label;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Line Chart ---
+            var lineChartData = @Html.Raw(ViewBag.LineChartDataJson);
+            var ctxLine = document.getElementById('lineChart').getContext('2d');
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: lineChartData.labels,
+                    datasets: lineChartData.datasets.map(function (ds) {
+                        return {
+                            label: ds.label,
+                            data: ds.data,
+                            borderColor: ds.borderColor,
+                            backgroundColor: ds.backgroundColor,
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: ds.borderColor,
+                            pointBorderColor: '#fff',
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: ds.borderColor,
+                            pointHoverBorderColor: '#fff',
+                            lineTension: 0.3
+                        };
+                    })
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        xAxes: [{
+                            gridLines: { display: false }
+                        }],
+                        yAxes: [{
+                            ticks: { beginAtZero: true, precision: 0 },
+                            gridLines: { color: "rgba(0, 0, 0, 0.05)" }
+                        }]
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 20, padding: 15 }
+                    },
+                    tooltips: { mode: 'index', intersect: false },
+                    hover: { mode: 'nearest', intersect: true }
+                }
+            });
+
+            // Auto-submit en cambios de dropdown / input
+            $('#employeeId, #month, #year, #startDate, #endDate').change(function () {
+                $(this).closest('form').submit();
+            });
+        });
+    </script>
+}

@@ -1,0 +1,293 @@
+﻿@{
+    // No @model directive as requested
+    ViewBag.Title = ViewBag.Title ?? "Dashboard";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
+
+    var userName = ViewBag.UserName as string;
+    var userTickets = ViewBag.UserTickets as List<dynamic>; // Cast to dynamic para tipos anónimos
+    var companyName = ViewBag.CompanyName as string;
+
+    var isEmployee = ViewBag.IsEmployee as bool? ?? false;
+    var assignedTickets = ViewBag.AssignedTickets as List<dynamic> ?? new List<dynamic>();
+
+    if (userTickets == null) { userTickets = new List<dynamic>(); }
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40JuKCqigSyOXoligTfP4K1m5b2R0eB4o3gN6l9x5L3f06wR5gM4uC/L9o0b4m0n0F0Z0M0L0A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Shared Header/Navigation Styles (from previous examples) */
+        .page-header-nav {
+            background-color: #fff; /* White background for nav */
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            color: #333; /* Darker text for nav */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Subtle shadow */
+            position: sticky; /* Make it sticky at the top */
+            top: 0;
+            z-index: 1000; /* Ensure it stays on top */
+            width: 100%;
+            box-sizing: border-box; /* Include padding in width */
+        }
+
+            .page-header-nav .logo-area {
+                display: flex; /* To align icon and text */
+                align-items: center;
+            }
+
+                .page-header-nav .logo-area .logo-icon {
+                    font-size: 24px; /* Adjust size as needed */
+                    color: #6200ea; /* Purple color for icon */
+                    margin-right: 8px;
+                }
+
+                .page-header-nav .logo-area span { /* For "Support empresa de IT" text */
+                    color: #333;
+                    font-size: 1.2em;
+                    font-weight: bold;
+                }
+
+            .page-header-nav .nav-links a {
+                color: #555;
+                margin-left: 25px; /* Increase spacing */
+                text-decoration: none;
+                font-size: 1.1em;
+                padding: 5px 0; /* Add padding for clickable area */
+            }
+
+                .page-header-nav .nav-links a:hover {
+                    color: #6200ea; /* Purple on hover */
+                }
+
+            .page-header-nav .user-actions {
+                display: flex;
+                align-items: center;
+            }
+
+                .page-header-nav .user-actions .bell-icon {
+                    font-size: 20px;
+                    color: #555;
+                    margin-right: 15px;
+                }
+
+                .page-header-nav .user-actions .sign-out-btn {
+                    background-color: #6200ea; /* Purple from your image */
+                    color: white;
+                    padding: 8px 15px;
+                    border-radius: 5px;
+                    text-decoration: none;
+                    font-weight: bold;
+                }
+
+                    .page-header-nav .user-actions .sign-out-btn:hover {
+                        background-color: #3700b3;
+                    }
+
+        /* Dashboard Specific Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5; /* Light grey background */
+            margin: 0;
+            padding: 0;
+            display: block;
+        }
+
+        .main-content {
+            padding: 20px;
+            max-width: 900px; /* Adjust max-width as needed */
+            margin: 30px auto; /* Margin from the top navigation */
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background-color: #e3f2fd; /* Light blue background */
+            border-radius: 8px;
+            border: 1px solid #bbdefb;
+            color: #1a237e; /* Dark blue text */
+        }
+
+            .welcome-section h1 {
+                font-size: 2.5em;
+                color: #3f51b5; /* Deeper blue for main heading */
+                margin-bottom: 10px;
+            }
+
+        .tickets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+            .tickets-header h2 {
+                color: #333;
+                font-size: 24px;
+                margin: 0; /* Remove default margin */
+            }
+
+        .btn-create-ticket {
+            background-color: #6200ea; /* Purple */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+            .btn-create-ticket:hover {
+                background-color: #3700b3; /* Darker purple */
+            }
+
+        .tickets-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+            .tickets-table th,
+            .tickets-table td {
+                padding: 12px;
+                border: 1px solid #ddd;
+                text-align: left;
+            }
+
+            .tickets-table th {
+                background-color: #f8f8f8;
+                font-weight: bold;
+                color: #555;
+            }
+
+            .tickets-table tbody tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+
+            .tickets-table tbody tr:hover {
+                background-color: #f1f1f1;
+            }
+
+            .tickets-table td a {
+                color: #6200ea; /* Purple for clickable titles */
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+                .tickets-table td a:hover {
+                    text-decoration: underline;
+                }
+
+        /* Footer styling */
+        .page-footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #888;
+            font-size: 0.9em;
+            border-top: 1px solid #eee;
+        }
+
+        /* NUEVO: Section de tickets asignados */
+        .assigned-tickets-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+            .assigned-tickets-section h2 {
+                color: #333;
+                font-size: 22px;
+                margin-bottom: 15px;
+            }
+
+            .assigned-tickets-section .btn-view-assigned {
+                background-color: #6200ea; /* Purple */
+                color: white;
+                padding: 10px 20px;
+                border: none;
+                border-radius: 5px;
+                text-decoration: none;
+                font-weight: bold;
+                transition: background-color 0.3s ease;
+            }
+
+                .assigned-tickets-section .btn-view-assigned:hover {
+                    background-color: #3700b3;
+                }
+    </style>
+</head>
+<body>
+
+    <div class="main-content">
+        @if (ViewBag.SuccessMessage != null)
+        {
+            <div class="alert alert-success" role="alert">
+                @ViewBag.SuccessMessage
+            </div>
+        }
+
+        <div class="welcome-section">
+            <h1>BIENVENIDO, @userName?.ToUpper()</h1> @* Welcome message with user's name *@
+        </div>
+
+        <div class="tickets-header">
+            <h2>Tus últimos 20 tickets</h2> @* Heading for the ticket list *@
+            @Html.ActionLink("Crear Nuevo Ticket", "CrearTicket", "CrearTicket", null, new { @class = "btn-create-ticket" }) @* Create New Ticket button *@
+        </div>
+
+        <table class="tickets-table">
+            <thead>
+                <tr>
+                    <th>N° de ticket</th> @* Column header *@
+                    <th>Titulo</th> @* Column header *@
+                    <th>Fecha de la ultima interacción</th> @* Column header *@
+                    <th>Estado del Ticket</th> @* Column header *@
+                </tr>
+            </thead>
+            <tbody>
+                @if (userTickets.Any())
+                {
+                    foreach (var ticket in userTickets)
+                    {
+                        <tr>
+                            <td>#@ticket.TicketID.ToString("D6")</td> @* Format with leading zeros *@
+                            <td>@Html.ActionLink((string)ticket.Titulo, "Chat", "TicketChat", new { id = ticket.TicketID }, null)</td> @* Clickable title *@
+                            <td>@ticket.FechaUltimaInteraccion.ToString("yyyy-MM-dd HH:mm")</td> @* Date format from image *@
+                            <td>@ticket.EstadoTicket</td> @* Display state name *@
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="4">No hay tickets recientes para mostrar.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (isEmployee)
+        {
+            <div class="assigned-tickets-section">
+                @{
+                    var countAssigned = assignedTickets.Count;
+                }
+                <h2>Tienes @countAssigned Ticket@(countAssigned == 1 ? "" : "s") asignad@(countAssigned == 1 ? "o" : "os") a revisar</h2>
+                @* Ajusta el action/controller al que quieras que apunte realmente *@
+                @Html.ActionLink("Ver Tickets asignados", "AssignedTickets", "Home", null, new { @class = "btn-view-assigned" })
+            </div>
+        }
+    </div>
+</body>
+</html>

@@ -1,0 +1,178 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using Proyecto_Supportly.Models
+@inject SupportDBContext _context
+
+@{
+    // 1. Leemos el email del usuario que quedó en sesión (si lo hay)
+    var usuarioEmail = Context.Session.GetString("Correo");
+    Usuarios usuarioLogueado = null;
+    bool esAdmin = false;
+
+    if (!string.IsNullOrEmpty(usuarioEmail))
+    {
+        // 2. Buscamos al usuario en la BD por su email
+        usuarioLogueado = _context.Usuarios
+            .AsNoTracking()
+            .FirstOrDefault(u => u.Email == usuarioEmail);
+
+        if (usuarioLogueado != null)
+        {
+            // 3. Leemos el rol de ese usuario
+            var rolUsuario = _context.Roles
+                .AsNoTracking()
+                .FirstOrDefault(r => r.RolID == usuarioLogueado.RolID);
+
+            // 4. Si el nombre del rol es exactamente "Administrador", marcamos la bandera
+            if (rolUsuario != null && rolUsuario.Nombre == "Administrador")
+            {
+                esAdmin = true;
+            }
+        }
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Proyecto_Supportly</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- FontAwesome (para el icono de usuario, etc.) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+          integrity="sha512-iBBXm8fW90+nuLcSKVBQ6Z6Yv7L1X/7R3Hke+jOa5mZm1eY8W75y1FdF5g4f8K3yXWpP1+UJpbf3Iz2WRTEm2g=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Tus estilos -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/Proyecto_Supportly.styles.css" asp-append-version="true" />
+
+    <style>
+        /* Mantengo tu tema morado original */
+        .navbar-custom {
+            background-color: #6a1b9a;
+            border-color: #6a1b9a;
+        }
+
+            .navbar-custom .navbar-brand,
+            .navbar-custom .nav-link {
+                color: #ffffff;
+            }
+
+                .navbar-custom .nav-link:hover {
+                    color: #e0e0e0;
+                }
+
+        .btn-primary-custom {
+            background-color: #6a1b9a;
+            border-color: #6a1b9a;
+            color: #ffffff;
+        }
+
+            .btn-primary-custom:hover {
+                background-color: #4a148c;
+                border-color: #4a148c;
+            }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
+            <div class="container-fluid">
+                <!-- Logo/Título -->
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                    Supportly
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarSupportedContent"
+                        aria-controls="navbarSupportedContent" aria-expanded="false"
+                        aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav me-auto">
+                        @* Si no hay usuario logueado, solo “Inicio” y “Iniciar Sesión” *@
+                        @if (usuarioLogueado == null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="UsuarioLogin" asp-action="Autenticar">Iniciar Sesión</a>
+                            </li>
+                        }
+                        else
+                        {
+                            @* Si el usuario está logueado y es administrador, mostramos menú ampliado *@
+                            @if (esAdmin)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="AdminUsuarios" asp-action="Index">Usuarios</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🔔</a>
+                                </li>
+                            }
+                            else
+                            {
+                                @* Si está logueado pero NO es admin, podrías mostrar solo “Inicio” u otros enlaces públicos *@
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🔔</a>
+                                </li>
+                            }
+                        }
+                    </ul>
+
+                    <ul class="navbar-nav ms-auto">
+                        @if (usuarioLogueado != null)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="usuarioDropdown" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user-circle"></i> @usuarioLogueado.Nombre
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="usuarioDropdown">
+                                    <li>
+                                        <a class="dropdown-item" asp-controller="UsuarioLogin" asp-action="Logout">
+                                            Cerrar Sesión
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted mt-auto">
+        <div class="container text-center py-3">
+            &copy; @DateTime.Now.Year - Proyecto_Supportly -
+            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <!-- jQuery y Bootstrap JS -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

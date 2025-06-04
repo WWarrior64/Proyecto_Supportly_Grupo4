@@ -1,0 +1,222 @@
+﻿@model Proyecto_Supportly.Models.Usuarios
+@{
+    ViewBag.Title = "Creación de Usuario Interno";
+    // Layout = "~/Views/Shared/_Layout.cshtml"; // Asumiendo un layout principal
+
+    var rolesList = ViewBag.RolesLista as SelectList;
+}
+
+<style>
+    /* Estilos básicos para el formulario (mueve a un CSS externo en producción) */
+    .form-container-card {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        max-width: 500px;
+        margin: 20px auto; /* Centrar la tarjeta */
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: .5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: .75rem 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 .2rem rgba(0,123,255,.25);
+        }
+
+    .password-container {
+        position: relative;
+    }
+
+    .password-toggle-icon {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+    .btn-submit-user {
+        background-color: #007bff; /* Azul primario */
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        width: 100%;
+        text-align: center;
+    }
+
+        .btn-submit-user:hover {
+            background-color: #0056b3;
+        }
+
+    .radio-group label {
+        margin-right: 15px;
+        font-weight: normal;
+    }
+
+    .text-danger {
+        color: #dc3545;
+        font-size: 0.875em;
+    }
+
+    .field-validation-error { /* Estilo por defecto de MVC para errores */
+        color: #dc3545;
+    }
+
+    .validation-summary-errors ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    .validation-summary-errors li {
+        color: #dc3545;
+    }
+
+    /* Estilos para el encabezado (similares a la imagen) */
+    .page-header-nav {
+        background-color: #343a40; /* Color oscuro para la barra de navegación */
+        padding: 10px 20px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .page-header-nav .logo-area a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .page-header-nav .nav-links a {
+            color: #f8f9fa; /* Color claro para los enlaces */
+            margin-left: 15px;
+            text-decoration: none;
+        }
+
+            .page-header-nav .nav-links a:hover {
+                color: #adb5bd; /* Color más claro al pasar el mouse */
+            }
+
+        .page-header-nav .user-actions .sign-out-btn {
+            background-color: #007bff; /* Azul para el botón Sign Out */
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+    .page-title-container {
+        padding-left: 20px; /* Alineado con el contenido general */
+    }
+
+</style>
+
+<div class="page-title-container">
+    <h2>@ViewBag.Title</h2>
+</div>
+
+
+<div class="form-container-card">
+    @using (Html.BeginForm("CrearUsuarioInterno", "AdminUsuarios", FormMethod.Post, new { autocomplete = "off" }))
+    {
+        @Html.AntiForgeryToken()
+        // Protección contra CSRF
+
+        @Html.ValidationSummary(true, "", new { @class = "text-danger validation-summary-errors" })
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Nombre, "Nombre Completo")
+            @Html.EditorFor(model => model.Nombre, new { htmlAttributes = new { @class = "form-control", placeholder = "Inserte su Nombre" } })
+            @Html.ValidationMessageFor(model => model.Nombre, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Email, "Correo Electrónico")
+            @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control", placeholder = "Inserte su Correo", type = "email" } })
+            @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Contraseña)
+            <div class="password-container">
+                @Html.PasswordFor(model => model.Contraseña, new { @class = "form-control", placeholder = "********", id = "passwordField" })
+                <span class="password-toggle-icon" onclick="togglePasswordVisibility('passwordField', this)">👁️</span>
+            </div>
+            <small>Mínimo 8 caracteres.</small><br />
+            @Html.ValidationMessageFor(model => model.Contraseña, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.Label("ConfirmPassword", "Confirmar Contraseña")
+            <div class="password-container">
+                @Html.Password("ConfirmPassword", null, new { @class = "form-control", placeholder = "********", id = "confirmPasswordField" })
+                <span class="password-toggle-icon" onclick="togglePasswordVisibility('confirmPasswordField', this)">👁️</span>
+            </div>
+            <small>Mínimo 8 caracteres.</small><br />
+            @Html.ValidationMessage("ConfirmPassword", new { @class = "text-danger" }) @* Para el error de no coincidencia *@
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.RolID, "Rol")
+            @Html.DropDownListFor(model => model.RolID, rolesList, "Seleccione un Rol", new { @class = "form-control" })
+            @Html.ValidationMessageFor(model => model.RolID, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.EstadoUsuario, "Estado")
+            <div class="radio-group">
+                @Html.RadioButtonFor(model => model.EstadoUsuario, false, new { id = "estadoInactivo" }) @Html.Label("estadoInactivo", "Inactivo")
+                @Html.RadioButtonFor(model => model.EstadoUsuario, true, new { id = "estadoActivo" }) @Html.Label("estadoActivo", "Activo")
+            </div>
+            @Html.ValidationMessageFor(model => model.EstadoUsuario, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn-submit-user">Añadir Usuario</button>
+        </div>
+    }
+</div>
+
+<script>
+    function togglePasswordVisibility(fieldId, iconElement) {
+        var passwordField = document.getElementById(fieldId);
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+            iconElement.textContent = "🙈"; // Cambiar icono a "oculto"
+        } else {
+            passwordField.type = "password";
+            iconElement.textContent = "👁️"; // Cambiar icono a "visible"
+        }
+    }
+</script>

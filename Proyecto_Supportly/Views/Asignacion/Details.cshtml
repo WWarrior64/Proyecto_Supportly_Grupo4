@@ -1,0 +1,286 @@
+﻿@{
+    ViewBag.Title = "Detalle del Ticket";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
+
+    var ticket = ViewBag.Ticket as Proyecto_Supportly.Models.Tickets;
+    var usuarioAsignadoNombre = ViewBag.UsuarioAsignadoNombre as string;
+}
+
+<style>
+    body {
+        background: linear-gradient(135deg, #e0f7fa 0%, #f3e5f5 100%);
+    }
+
+    .ticket-card {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        padding: 30px;
+        margin-top: 30px;
+        position: relative;
+    }
+
+    .ticket-header {
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        padding-left: 50px; /* espacio para el botón de retroceso */
+    }
+
+        .ticket-header h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: #4a148c;
+        }
+
+    .back-button {
+        position: absolute;
+        top: 30px;
+        left: 30px;
+        font-size: 1.5rem;
+        color: #5c6bc0;
+        cursor: pointer;
+    }
+
+    .alert-container .alert {
+        border-radius: 4px;
+    }
+
+    .ticket-info {
+        padding: 10px 0;
+    }
+
+        .ticket-info p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .ticket-info strong {
+            color: #333;
+        }
+
+    .ticket-actions {
+        border-top: 1px solid #ddd;
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 25px;
+        padding-top: 15px;
+    }
+
+        .ticket-actions .form-inline {
+            display: flex;
+            align-items: center;
+        }
+
+        .ticket-actions .form-group {
+            margin-right: 15px;
+        }
+
+    /* Botón Asignar estilo lila-azul */
+    .btn-primary-custom {
+        background: linear-gradient(90deg, #7e57c2, #5c6bc0);
+        border: none;
+        color: white;
+    }
+
+        .btn-primary-custom:hover {
+            background: linear-gradient(90deg, #9575cd, #7986cb);
+        }
+
+    .btn-info-custom {
+        background-color: #42a5f5;
+        border: none;
+        color: white;
+    }
+
+        .btn-info-custom:hover {
+            background-color: #1e88e5;
+        }
+
+    .btn-secondary-custom {
+        background-color: #90a4ae;
+        border: none;
+        color: white;
+    }
+
+        .btn-secondary-custom:hover {
+            background-color: #78909c;
+        }
+
+    .priority-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: white;
+        font-weight: 600;
+    }
+
+    .priority-baja {
+        background-color: #388e3c;
+    }
+
+    .priority-media {
+        background-color: #fbc02d;
+    }
+
+    .priority-alta {
+        background-color: #c62828;
+    }
+
+    .file-link {
+        color: #5c6bc0;
+        text-decoration: underline;
+    }
+</style>
+
+<div class="container">
+    <div class="ticket-card">
+        <a href="javascript:history.back()" class="back-button" title="Regresar">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+
+        <div class="ticket-header">
+            <h2>Ticket #@ticket.TicketID</h2>
+        </div>
+
+        <div class="alert-container">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    @TempData["InfoMessage"]
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Cerrar">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            }
+        </div>
+
+        <div class="ticket-info">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Título:</strong> @ticket.Titulo</p>
+                    <p><strong>Aplicación/Servicio:</strong> @ViewBag.CategoriaNombre</p>
+                    <p>
+                        <strong>Prioridad:</strong>
+                        <span class="priority-badge @(ticket.Prioridad.ToLower() == "alta" ?
+                            "priority-alta" :
+                            ticket.Prioridad.ToLower() == "media" ?
+                                "priority-media" :
+                                "priority-baja")">
+                            @ticket.Prioridad
+                        </span>
+                    </p>
+                    <p><strong>Estado:</strong> @ViewBag.EstadoNombre</p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Creado por:</strong>
+                        @ViewBag.UsuarioCreadorNombre el @ticket.FechaCreacion.ToShortDateString() @ticket.FechaCreacion.ToShortTimeString()
+                    </p>
+                    <p><strong>Asignado a:</strong> @usuarioAsignadoNombre</p>
+                    @if (ticket.FechaCierre.HasValue)
+                    {
+                        <p>
+                            <strong>Fecha de Cierre:</strong>
+                            @ticket.FechaCierre.Value.ToShortDateString()
+                            @ticket.FechaCierre.Value.ToShortTimeString()
+                        </p>
+                    }
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <p><strong>Descripción:</strong></p>
+                    <p>@ticket.Descripcion</p>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-12">
+                    <p><strong>Archivos:</strong></p>
+                    @if (ViewBag.Archivos != null)
+                    {
+                        foreach (var enlace in (List<string>)ViewBag.Archivos)
+                        {
+                            <p>
+                                <a href="@enlace" target="_blank" class="file-link">
+                                    @System.IO.Path.GetFileName(enlace)
+                                </a>
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <p>No hay archivos adjuntos.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="ticket-actions">
+            @using (Html.BeginForm("Assign", "Asignacion", FormMethod.Post, new { @class = "form-inline" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Hidden("ticketId", ticket.TicketID)
+
+                <div class="form-group">
+                    @Html.DropDownList("prioridad",
+                             (IEnumerable<SelectListItem>)ViewBag.Prioridades,
+                             new { @class = "form-control mr-2" })
+                </div>
+
+                <div class="form-group">
+                    @Html.DropDownList("usuarioAsignadoId",
+                             (IEnumerable<SelectListItem>)ViewBag.UsuariosInternos,
+                             "Seleccionar Empleado",
+                             new { @class = "form-control mr-2" })
+                </div>
+
+                <button type="submit" class="btn btn-primary-custom">Asignar</button>
+            }
+
+            @Html.ActionLink(
+                     "Ver detalle de asignación",
+                     "VerDetalleAsignacion",
+                     "TicketAsignado",
+                     new { id = ticket.TicketID },
+                     new { @class = "btn btn-info-custom ml-2" }
+                     )
+
+            @using (Html.BeginForm("Follow", "Asignacion", FormMethod.Post, new { @class = "form-inline ml-2" }))
+            {
+                @Html.AntiForgeryToken()
+                @Html.Hidden("ticketId", ticket.TicketID)
+                <button type="submit" class="btn btn-secondary-custom">Seguir</button>
+            }
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+@* Bootstrap JS necesario para que data-dismiss funcione *@
+    <script>
+        $(document).ready(function () {
+            $('.alert').alert();
+        });
+    </script>
+}

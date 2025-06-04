@@ -1,0 +1,171 @@
+﻿@{
+    ViewBag.Title = "Registro de Usuario";
+}
+
+<style>
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background: #f4f6fc;
+        margin: 0;
+        padding: 0;
+    }
+
+    .form-container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        width: 450px;
+        margin: auto;
+        margin-top: 50px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+        text-align: center;
+        color: #2E3192;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+    }
+
+    .btn-primary {
+        background: #2E3192;
+        color: white;
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+        .btn-primary:hover {
+            background: #1BFFFF;
+            color: #2E3192;
+        }
+
+    .text-danger {
+        font-size: 13px;
+        color: red;
+    }
+
+    .text-success {
+        font-size: 14px;
+        color: green;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .text-muted {
+        color: gray;
+        font-size: 14px;
+        text-align: center;
+    }
+</style>
+
+<div class="form-container">
+    <h2>Registro de Usuario</h2>
+
+    @* Mensaje de éxito (ViewBag.Mensaje) *@
+    @if (ViewBag.Mensaje != null)
+    {
+        <p class="text-success">@ViewBag.Mensaje</p>
+    }
+
+    @* Mensaje de error global *@
+    @if (ViewBag.ErrorGeneral != null)
+    {
+        <p class="text-danger">@ViewBag.ErrorGeneral</p>
+    }
+
+    @using (Html.BeginForm("Index", "RegistroUsuarioExterno", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="form-group">
+            <label for="NombreCompleto">Nombre completo</label>
+            @Html.TextBox(
+                     "NombreCompleto",
+                     ViewBag.NombreCompleto as string,
+                     new { @class = "form-control", placeholder = "Tu nombre completo" }
+                     )
+            @Html.ValidationMessage("NombreCompleto", null, new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <label for="Email">Correo electrónico</label>
+            @Html.TextBox(
+                     "Email",
+                     ViewBag.Email as string,
+                     new { @class = "form-control", placeholder = "tucorreo@ejemplo.com", type = "email" }
+                     )
+            @Html.ValidationMessage("Email", null, new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <label for="Contraseña">Contraseña</label>
+            @Html.Password(
+                     "Contraseña",
+                     null,
+                     new { @class = "form-control", placeholder = "********" }
+                     )
+            @Html.ValidationMessage("Contraseña", null, new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <label for="Empresa">Empresa (opcional)</label>
+            @Html.TextBox(
+                     "Empresa",
+                     ViewBag.Empresa as string,
+                     new { @class = "form-control", placeholder = "Ejemplo S.A." }
+                     )
+            @Html.ValidationMessage("Empresa", null, new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <label for="ContactoPrincipal">Contacto principal (opcional)</label>
+            @Html.TextBox(
+                     "ContactoPrincipal",
+                     ViewBag.ContactoPrincipal as string,
+                     new { @class = "form-control", placeholder = "Nombre del responsable" }
+                     )
+            @Html.ValidationMessage("ContactoPrincipal", null, new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <label for="TelefonoContacto">Teléfono de contacto (opcional)</label>
+            @Html.TextBox(
+                     "TelefonoContacto",
+                     ViewBag.TelefonoContacto as string,
+                     new { @class = "form-control", placeholder = "+503 7070 7890" }
+                     )
+            @Html.ValidationMessage("TelefonoContacto", null, new { @class = "text-danger" })
+        </div>
+
+        <p class="text-muted">Tu cuenta estará pendiente de aprobación por un administrador.</p>
+
+        <div class="text-center">
+            <input type="submit" value="Registrarse" class="btn btn-primary" />
+        </div>
+    }
+</div>
+
+@* Validaciones a nivel cliente (asegúrate de incluir los scripts en el layout) *@
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+}

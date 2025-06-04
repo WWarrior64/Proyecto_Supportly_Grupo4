@@ -1,0 +1,258 @@
+﻿@model Proyecto_Supportly.Models.Usuarios
+@{
+    ViewBag.Title = "Creación de Usuario Externo";
+    var rolesList = ViewBag.RolesLista as IEnumerable<SelectListItem>;
+}
+
+<style>
+    /* (tus estilos tal como estaban) */
+    .form-container-card {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        max-width: 800px;
+        margin: 20px auto;
+    }
+
+    .form-columns {
+        display: flex;
+        gap: 20px;
+    }
+
+    .form-column {
+        flex: 1;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: .5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: .75rem 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 .2rem rgba(0,123,255,.25);
+        }
+
+    .password-container {
+        position: relative;
+    }
+
+    .password-toggle-icon {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+    .btn-submit-user {
+        background-color: #007bff;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        width: 100%;
+        text-align: center;
+        margin-top: 10px;
+    }
+
+        .btn-submit-user:hover {
+            background-color: #0056b3;
+        }
+
+    .radio-group label {
+        margin-right: 15px;
+        font-weight: normal;
+    }
+
+    .text-danger {
+        color: #dc3545;
+        font-size: 0.875em;
+    }
+
+    .field-validation-error {
+        color: #dc3545;
+    }
+
+    .validation-summary-errors ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    .validation-summary-errors li {
+        color: #dc3545;
+    }
+
+    .page-header-nav {
+        background-color: #343a40;
+        padding: 10px 20px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .page-header-nav .logo-area a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .page-header-nav .nav-links a {
+            color: #f8f9fa;
+            margin-left: 15px;
+            text-decoration: none;
+        }
+
+            .page-header-nav .nav-links a:hover {
+                color: #adb5bd;
+            }
+
+        .page-header-nav .user-actions .sign-out-btn {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+
+    .page-title-container {
+        padding-left: 20px;
+    }
+</style>
+
+<div class="page-title-container">
+    <h2>@ViewBag.Title</h2>
+</div>
+
+<div class="form-container-card">
+    @using (Html.BeginForm("CrearUsuarioExterno", "AdminUsuarios", FormMethod.Post, new { autocomplete = "off" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "text-danger validation-summary-errors" })
+
+        <div class="form-columns">
+            <!-- Columna 1 -->
+            <div class="form-column">
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Nombre, "Nombre Completo")
+                    @Html.EditorFor(m => m.Nombre, new { htmlAttributes = new { @class = "form-control", placeholder = "Inserte su Nombre" } })
+                    @Html.ValidationMessageFor(m => m.Nombre, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Email, "Correo Electrónico")
+                    @Html.EditorFor(m => m.Email, new { htmlAttributes = new { @class = "form-control", placeholder = "Inserte su Correo", type = "email" } })
+                    @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Contraseña)
+                    <div class="password-container">
+                        @Html.PasswordFor(m => m.Contraseña, new { @class = "form-control", placeholder = "********", id = "passwordField" })
+                        <span class="password-toggle-icon" onclick="togglePasswordVisibility('passwordField', this)">👁️</span>
+                    </div>
+                    <small>Mínimo 8 caracteres.</small><br />
+                    @Html.ValidationMessageFor(m => m.Contraseña, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    @Html.Label("ConfirmPassword", "Confirmar Contraseña")
+                    <div class="password-container">
+                        @Html.Password("ConfirmPassword", null, new { @class = "form-control", placeholder = "********", id = "confirmPasswordField" })
+                        <span class="password-toggle-icon" onclick="togglePasswordVisibility('confirmPasswordField', this)">👁️</span>
+                    </div>
+                    <small>Mínimo 8 caracteres.</small><br />
+                    @Html.ValidationMessage("ConfirmPassword", new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Empresa, "Nombre de la Empresa")
+                    @Html.EditorFor(m => m.Empresa, new { htmlAttributes = new { @class = "form-control", placeholder = "Ingrese el Nombre de la Empresa" } })
+                    @Html.ValidationMessageFor(m => m.Empresa, "", new { @class = "text-danger" })
+                </div>
+            </div>
+
+            <!-- Columna 2 -->
+            <div class="form-column">
+                <div class="form-group">
+                    @Html.LabelFor(m => m.NombreContactoPrincipal, "Nombre de Contacto Principal")
+                    @Html.EditorFor(m => m.NombreContactoPrincipal, new { htmlAttributes = new { @class = "form-control", placeholder = "Inserte Nombre de Contacto" } })
+                    @Html.ValidationMessageFor(m => m.NombreContactoPrincipal, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group">
+                    @Html.LabelFor(m => m.Telefono, "Teléfono de Contacto")
+                    @Html.EditorFor(m => m.Telefono, new { htmlAttributes = new { @class = "form-control", placeholder = "Ingrese su Teléfono de Contacto", type = "tel" } })
+                    @Html.ValidationMessageFor(m => m.Telefono, "", new { @class = "text-danger" })
+                </div>
+
+                <div class="form-group" style="margin-top: 2.5rem;">
+                    @Html.LabelFor(m => m.EstadoUsuario, "Estado")
+                    <div class="radio-group">
+                        @Html.RadioButtonFor(m => m.EstadoUsuario, false, new { id = "estadoInactivo" })
+                        @Html.Label("estadoInactivo", "Inactivo")
+                        @Html.RadioButtonFor(m => m.EstadoUsuario, true, new { id = "estadoActivo" })
+                        @Html.Label("estadoActivo", "Activo")
+                    </div>
+                    @Html.ValidationMessageFor(m => m.EstadoUsuario, "", new { @class = "text-danger" })
+                </div>
+
+                @* Aquí agregamos el DropDownList para "RolID" *@
+                <div class="form-group">
+                    @Html.LabelFor(m => m.RolID, "Rol")
+                    @Html.DropDownListFor(
+                             m => m.RolID,
+                             rolesList,
+                             "Seleccione un Rol",
+                             new { @class = "form-control" }
+                             )
+                    @Html.ValidationMessageFor(m => m.RolID, "", new { @class = "text-danger" })
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn-submit-user">Añadir Usuario</button>
+        </div>
+    }
+</div>
+
+<script>
+    function togglePasswordVisibility(fieldId, iconElement) {
+        var passwordField = document.getElementById(fieldId);
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+            iconElement.textContent = "🙈";
+        } else {
+            passwordField.type = "password";
+            iconElement.textContent = "👁️";
+        }
+    }
+</script>

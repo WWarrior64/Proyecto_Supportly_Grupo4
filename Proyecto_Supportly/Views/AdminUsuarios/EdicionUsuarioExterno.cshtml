@@ -1,0 +1,292 @@
+﻿@model Proyecto_Supportly.Models.Usuarios
+@{
+    ViewBag.Title = "Edición de Usuario Externo";
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
+
+
+    var currentUser = Model ?? (ViewBag.Usuario as Proyecto_Supportly.Models.Usuarios);
+
+    // If external users also have roles, uncomment and populate rolesList
+    var rolesList = ViewBag.RolesLista as SelectList;
+}
+
+<style>
+    /* Estilos básicos para el formulario (mueve a un CSS externo en producción) */
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f2f5;
+        margin: 0;
+        padding: 0;
+    }
+
+    .form-container-card {
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        max-width: 500px;
+        margin: 20px auto; /* Centrar la tarjeta */
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+        .form-group label {
+            display: block;
+            margin-bottom: .5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: .75rem 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+
+        .form-control[readonly] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
+
+        .form-control:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 .2rem rgba(0,123,255,.25);
+        }
+
+    .password-container {
+        position: relative;
+    }
+
+    .password-toggle-icon {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+    .btn-submit-user {
+        background-color: #6200ea; /* Purple from your image */
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        width: 100%;
+        text-align: center;
+    }
+
+        .btn-submit-user:hover {
+            background-color: #3700b3; /* Darker purple on hover */
+        }
+
+    .radio-group label {
+        margin-right: 15px;
+        font-weight: normal;
+    }
+
+    .text-danger {
+        color: #dc3545;
+        font-size: 0.875em;
+    }
+
+    .field-validation-error {
+        color: #dc3545;
+    }
+
+    .validation-summary-errors ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+
+    .validation-summary-errors li {
+        color: #dc3545;
+    }
+
+    /* Estilos para el encabezado (similares a la imagen) */
+    .page-header-nav {
+        background-color: #fff; /* White background for nav */
+        border-bottom: 1px solid #ddd;
+        padding: 10px 20px;
+        color: #333; /* Darker text for nav */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* Subtle shadow */
+    }
+
+        .page-header-nav .logo-area {
+            display: flex; /* To align icon and text */
+            align-items: center;
+        }
+
+            .page-header-nav .logo-area .logo-icon {
+                font-size: 24px; /* Adjust size as needed */
+                color: #6200ea; /* Purple color for icon */
+                margin-right: 8px;
+            }
+
+            .page-header-nav .logo-area a {
+                color: #333;
+                text-decoration: none;
+                font-size: 1.5em;
+                font-weight: bold;
+            }
+
+        .page-header-nav .nav-links a {
+            color: #555;
+            margin-left: 25px; /* Increase spacing */
+            text-decoration: none;
+            font-size: 1.1em;
+            padding: 5px 0; /* Add padding for clickable area */
+        }
+
+            .page-header-nav .nav-links a:hover {
+                color: #6200ea; /* Purple on hover */
+            }
+
+        .page-header-nav .user-actions {
+            display: flex;
+            align-items: center;
+        }
+
+            .page-header-nav .user-actions .bell-icon {
+                font-size: 20px;
+                color: #555;
+                margin-right: 15px;
+            }
+
+            .page-header-nav .user-actions .sign-out-btn {
+                background-color: #6200ea; /* Purple from your image */
+                color: white;
+                padding: 8px 15px;
+                border-radius: 5px;
+                text-decoration: none;
+                font-weight: bold;
+            }
+
+                .page-header-nav .user-actions .sign-out-btn:hover {
+                    background-color: #3700b3;
+                }
+
+    .page-title-container {
+        text-align: center; /* Center the title as per the image */
+        margin-bottom: 30px;
+        font-size: 24px;
+        color: #333;
+    }
+</style>
+
+<div class="page-title-container">
+    <h2>@ViewBag.Title</h2>
+</div>
+
+<div class="form-container-card">
+    @using (Html.BeginForm("EdicionUsuarioExterno", "AdminUsuarios", new { id = Model.UsuarioID }, FormMethod.Post, false, new { autocomplete = "off" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "text-danger validation-summary-errors" })
+
+        @Html.HiddenFor(model => model.UsuarioID)
+        @Html.HiddenFor(model => model.TipoUsuario) @* Tipo de usuario no se edita aquí *@
+        @Html.HiddenFor(model => model.FechaCreacion) @* Fecha de creación no se edita *@
+        @Html.HiddenFor(model => model.Contraseña) @* Original hash password passed for non-change scenarios *@
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Nombre, "Nombre Completo:")
+            @Html.EditorFor(model => model.Nombre, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.Nombre, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Email, "Correo Electrónico:")
+            @Html.EditorFor(model => model.Email, new { htmlAttributes = new { @class = "form-control", type = "email" } })
+            @Html.ValidationMessageFor(model => model.Email, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.Label("ContraseñaNueva", "Contraseña:") @* Changed label to "Contraseña" as per image *@
+            <div class="password-container">
+                @Html.Password("ContraseñaNueva", null, new { @class = "form-control", placeholder = "Dejar en blanco para no cambiar", id = "passwordField" })
+                <span class="password-toggle-icon" onclick="togglePasswordVisibility('passwordField', this)">👁️</span>
+            </div>
+            <small>Mínimo 8 caracteres si se cambia.</small><br />
+            @Html.ValidationMessage("ContraseñaNueva", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Empresa, "Nombre de la Empresa:")
+            @Html.EditorFor(model => model.Empresa, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.Empresa, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.NombreContactoPrincipal, "Nombre de Contacto Principal:")
+            @Html.EditorFor(model => model.NombreContactoPrincipal, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.NombreContactoPrincipal, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Telefono, "Teléfono de Contacto:")
+            @Html.EditorFor(model => model.Telefono, new { htmlAttributes = new { @class = "form-control" } })
+            @Html.ValidationMessageFor(model => model.Telefono, "", new { @class = "text-danger" })
+        </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.RolID, "Rol")
+                @Html.DropDownListFor(
+                         m => m.RolID,
+                         rolesList,                            // << aquí pasamos explícitamente la SelectList
+                         "Seleccione un Rol",
+                         new { @class = "form-control" }
+                         )
+                @Html.ValidationMessageFor(m => m.RolID, "", new { @class = "text-danger" })
+            </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.EstadoUsuario, "Estado:")
+            <div class="radio-group">
+                @Html.RadioButtonFor(model => model.EstadoUsuario, false, new { id = "estadoInactivo" }) @Html.Label("estadoInactivo", "Inactivo")
+                @Html.RadioButtonFor(model => model.EstadoUsuario, true, new { id = "estadoActivo" }) @Html.Label("estadoActivo", "Activo")
+            </div>
+            @Html.ValidationMessageFor(model => model.EstadoUsuario, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn-submit-user">Guardar Cambios</button>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+            @Html.ActionLink("Cancelar y Volver a la Lista", "Index", "AdminUsuarios", null, new { @class = "btn btn-link" })
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // Reutilizar la misma función de JavaScript para mostrar/ocultar contraseña
+        function togglePasswordVisibility(fieldId, iconElement) {
+            var passwordField = document.getElementById(fieldId);
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                iconElement.textContent = "🙈";
+            } else {
+                passwordField.type = "password";
+                iconElement.textContent = "👁️";
+            }
+        }
+    </script>
+}
