@@ -64,7 +64,10 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Datos de tickets del año actual</h2>
-        <button class="btn btn-primary-custom">Vista Tickets</button>
+        <a href="@Url.Action("MisTicketsAsignados", "VerTickets")" class="btn btn-primary-custom">
+            Vista Tickets
+        </a>
+
     </div>
 
     @using (Html.BeginForm("Index", "Dashboard", FormMethod.Get, new { @class = "form-inline mb-4" }))

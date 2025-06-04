@@ -1,0 +1,284 @@
+﻿@using Proyecto_Supportly.Models 
+@using System.Collections.Generic
+
+@{
+    ViewData["Title"] = "Historial de Tickets";
+
+    // Lista de tickets cerrados pasada por ViewBag desde el controlador
+    var historialTickets = ViewBag.HistorialTickets as List<dynamic>;
+
+    // El ticket seleccionado, si se devolvió desde el controlador
+    var selected = ViewBag.SelectedTicket as dynamic;
+
+    // Nombre del usuario en sesión
+    var nombreUsuario = ViewBag.NombreUsuario as string;
+
+    // Lista de comentarios del ticket seleccionado
+    var comentarios = ViewBag.Comentarios as List<dynamic>;
+}
+
+<style>
+    body {
+        background-color: #e6e6fa !important;
+    }
+
+    .card {
+        border-radius: .75rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #007bff;
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-bottom: 1px solid rgba(0, 0, 0, .125);
+        border-radius: calc(.75rem - 1px) calc(.75rem - 1px) 0 0;
+    }
+
+    .ticket-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(0, 0, 0, .125);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .ticket-list-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .ticket-list-item.active {
+        background-color: #e2e6ea;
+        border-left: 5px solid #007bff;
+        padding-left: calc(1.25rem - 5px);
+    }
+
+    .ticket-details-compact {
+        flex-grow: 1;
+        margin-right: 15px;
+    }
+
+    .ticket-title-compact {
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 0.25rem;
+    }
+
+    .ticket-meta-compact {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .ticket-date-compact {
+        text-align: right;
+        font-size: 0.875rem;
+        color: #6c757d;
+        flex-shrink: 0;
+    }
+
+    .description-panel {
+        background-color: #fff;
+        padding: 1.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: .75rem;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .05);
+        min-height: 400px;
+    }
+
+    .description-panel h5 {
+        color: #007bff;
+        margin-bottom: 1rem;
+    }
+
+    .comments-section {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+
+    .comment-item {
+        background-color: #f8f9fa;
+        border-radius: .5rem;
+        padding: .75rem;
+        margin-bottom: .75rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .comment-item small {
+        display: block;
+        color: #6c757d;
+        margin-top: .25rem;
+    }
+
+    .btn-historial-back {
+        margin-left: auto;
+        background-color: #ffffff;
+        color: #007bff;
+        border: 1px solid #007bff;
+        border-radius: .25rem;
+        padding: .25rem .5rem;
+        text-decoration: none;
+    }
+
+    .btn-historial-back:hover {
+        background-color: #e9ecef;
+        color: #0056b3;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Columna izquierda: lista de tickets cerrados -->
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">Historial de Tickets de @nombreUsuario</h4>
+                    <a href="@Url.Action("MisTicketsAsignados", "VerTickets")" class="btn-historial-back">
+                        <i class="bi bi-arrow-left me-1"></i> Volver
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    @if (historialTickets == null || !historialTickets.Any())
+                    {
+                        <p class="p-3 mb-0 text-muted text-center">
+                            No se encontraron tickets en el historial.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var ticket in historialTickets)
+                            {
+                                var isActive = (selected != null && ticket.TicketID == selected.TicketID);
+                                var itemCss = isActive ? "ticket-list-item active" : "ticket-list-item";
+
+                                <a href="@Url.Action("HistorialTickets", "VerTickets", new { ticketId = ticket.TicketID })"
+                                   class="@itemCss">
+                                    <div class="ticket-details-compact">
+                                        <div class="ticket-title-compact">
+                                            #@ticket.TicketID - @ticket.Titulo
+                                        </div>
+                                        <div class="ticket-meta-compact">
+                                            Creado por: <strong>@ticket.NombreCreador</strong>
+                                        </div>
+                                    </div>
+                                    <div class="ticket-date-compact">
+                                        @((DateTime)ticket.FechaCreacion).ToString("dd/MM/yyyy")
+                                        <br />
+                                        <small>@((DateTime)ticket.FechaCreacion).ToString("HH:mm")</small>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: detalle del ticket seleccionado y comentarios -->
+        <div class="col-md-7">
+            <div id="ticketDetailContainer" class="description-panel">
+                @if (selected == null)
+                {
+                    <div class="text-center text-muted p-5">
+                        <i class="bi bi-info-circle" style="font-size: 2rem;"></i>
+                        <p class="mt-3">Selecciona un ticket de la lista para ver sus detalles aquí.</p>
+                    </div>
+                }
+                else
+                {
+                    @* Ya estamos dentro de código Razor/C#: DECLARAMOS directamente la variable sin usar @{ ... } *@
+                    string prioridadClassSel = selected.Prioridad switch
+                    {
+                        "Alta" => "badge-urgencia-alta",
+                        "Media" => "badge-urgencia-media",
+                        "Baja" => "badge-urgencia-baja",
+                        _ => "bg-secondary"
+                    };
+                    <h5 class="card-title text-primary">
+                        Ticket #@selected.TicketID: @selected.Titulo
+                    </h5>
+                    <p class="card-text mb-1">
+                        <strong>Descripción:</strong><br />
+                        @Html.Raw(
+                            ((string)selected.Descripcion)?.Replace("\r\n", "<br />")
+                            ?? "Sin descripción")
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Prioridad:</strong>
+                        <span class="badge @prioridadClassSel">
+                            @selected.Prioridad
+                        </span>
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Estado:</strong>
+                        <span class="badge bg-secondary">
+                            @selected.EstadoNombre
+                        </span>
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Creado por:</strong> <strong>@selected.NombreCreador</strong>
+                    </p>
+                    <p class="card-text mb-2">
+                        <strong>Fecha de Creación:</strong>
+                        @(((DateTime)selected.FechaCreacion).ToString("dd/MM/yyyy HH:mm"))
+                    </p>
+                    <p class="card-text mb-2">
+                        <strong>Fecha de Cierre:</strong>
+                        @(((DateTime)selected.FechaCierre).ToString("dd/MM/yyyy HH:mm"))
+                    </p>
+
+                    @* Archivos adjuntos (si los hubiera) *@
+                    @if (selected.Archivos != null && ((List<string>)selected.Archivos).Any())
+                    {
+                        <p><strong>Archivos:</strong></p>
+                        @foreach (var enlace in (List<string>)selected.Archivos)
+                        {
+                            <p>
+                                <a href="@enlace" target="_blank" class="text-decoration-underline">
+                                    @System.IO.Path.GetFileName(enlace)
+                                </a>
+                            </p>
+                        }
+                    }
+                    else
+                    {
+                        <p><em>No hay archivos adjuntos.</em></p>
+                    }
+
+                    @* Sección de comentarios del ticket *@
+                    <div class="comments-section">
+                        <h6>Comentarios:</h6>
+                        @if (comentarios != null && comentarios.Any())
+                        {
+                            @foreach (var comment in comentarios)
+                            {
+                                <div class="comment-item">
+                                    <p class="mb-0">@comment.Contenido</p>
+                                    <small>
+                                        <strong>@(comment.Usuario ?? "Usuario Desconocido")</strong> -
+                                        @(((DateTime)comment.FechaComentario).ToString("dd/MM/yyyy HH:mm"))
+                                    </small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted">No hay comentarios para este ticket.</p>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+}

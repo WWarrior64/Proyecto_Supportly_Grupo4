@@ -1,0 +1,267 @@
+﻿@using System.Collections.Generic
+
+@{
+    ViewData["Title"] = "Mis Tickets Asignados";
+
+    // En el controlador cargamos ViewBag.TicketsAsignados como List<objetoAnónimo>
+    var ticketsAsignados = ViewBag.TicketsAsignados as List<dynamic>;
+
+    // El ticket seleccionado (si existe), también es un objeto anónimo con los mismos campos
+    var selectedTicket = ViewBag.SelectedTicket as dynamic;
+
+    // Nombre del usuario logueado (vista “Mis Tickets Asignados”)
+    var nombreUsuario = ViewBag.NombreUsuario as string;
+
+    // Lista de comentarios (objeto anónimo con Contenido, Usuario y FechaComentario)
+    var comentarios = ViewBag.Comentarios as List<dynamic>;
+}
+
+<style>
+    /* Fondo morado lila SOLO para esta vista */
+    body {
+        background-color: #e6e6fa !important;
+    }
+
+    .card {
+        border-radius: .75rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
+    }
+
+    .badge-urgencia-alta {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    .badge-urgencia-media {
+        background-color: #ffc107;
+        color: #212529;
+    }
+
+    .badge-urgencia-baja {
+        background-color: #17a2b8;
+        color: #fff;
+    }
+
+    .card-text strong {
+        color: #343a40;
+    }
+
+    .ticket-list-item {
+        cursor: pointer;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #dee2e6;
+        transition: background-color 0.2s ease;
+    }
+
+    .ticket-list-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .ticket-list-item.selected {
+        background-color: #e9ecef;
+        font-weight: bold;
+    }
+
+    .description-panel {
+        background-color: #fff;
+        padding: 1.5rem;
+        border: 1px solid #dee2e6;
+        border-radius: .75rem;
+        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .05);
+        min-height: 200px;
+    }
+
+    .description-panel h5 {
+        color: #007bff;
+        margin-bottom: 1rem;
+    }
+
+    .comments-section {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+
+    .comment-item {
+        background-color: #f8f9fa;
+        border-radius: .5rem;
+        padding: .75rem;
+        margin-bottom: .75rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .comment-item small {
+        display: block;
+        color: #6c757d;
+        margin-top: .25rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Columna izquierda: lista de tickets -->
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-ticket-fill me-2"></i>
+                        @* Usamos ViewBag.EsAdministrador para decidir el texto *@
+                        @if ((bool)(ViewBag.EsAdministrador ?? false))
+                        {
+                            @:Tickets
+                        }
+                        else
+                        {
+                            @:Tickets Asignados a @nombreUsuario
+                        }
+                    </h4>
+                    <!-- Botón para ir al historial de tickets cerrados -->
+                    <a href="@Url.Action("HistorialTickets", "VerTickets")"
+                       class="btn btn-light btn-sm">
+                        <i class="bi bi-clock-history me-1"></i> Historial
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    @if (ticketsAsignados == null || !ticketsAsignados.Any())
+                    {
+                        <p class="p-3 mb-0 text-muted">
+                            No hay tickets asignados a este usuario.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="list-group list-group-flush">
+                            @foreach (var ticket in ticketsAsignados)
+                            {
+                                string prioridadClass = ticket.Prioridad switch
+                                {
+                                    "Alta" => "badge-urgencia-alta",
+                                    "Media" => "badge-urgencia-media",
+                                    "Baja" => "badge-urgencia-baja",
+                                    _ => "bg-secondary"
+                                };
+
+                                bool esSeleccionado = (selectedTicket != null && ticket.TicketID == selectedTicket.TicketID);
+                                string itemCss = esSeleccionado
+                                ? "ticket-list-item selected"
+                                : "ticket-list-item";
+
+                                <a href="@Url.Action("MisTicketsAsignados", "VerTickets", new { ticketId = ticket.TicketID })"
+                                   class="list-group-item list-group-item-action @itemCss">
+                                    <div class="d-flex w-100 justify-content-between align-items-center">
+                                        <h6 class="mb-1 text-dark">@ticket.Titulo</h6>
+                                        <small class="badge @prioridadClass">@ticket.Prioridad</small>
+                                    </div>
+                                    <small class="text-muted">
+                                        Creado por: <strong>@ticket.NombreCreador</strong>
+                                    </small>
+                                </a>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna derecha: detalle del ticket seleccionado y comentarios -->
+        <div class="col-md-8">
+            <div id="ticket-description-panel" class="description-panel">
+                @if (selectedTicket == null)
+                {
+                    <h5 class="text-muted">
+                        Selecciona un ticket para ver los detalles
+                    </h5>
+                    <p class="text-muted">
+                        Aquí aparecerá la descripción completa, otros detalles y los comentarios del ticket.
+                    </p>
+                }
+                else
+                {
+                    @* Ya estamos dentro de código Razor/C#: DECLARAMOS directamente la variable sin usar @{ ... } *@
+                    string prioridadClassSel = selectedTicket.Prioridad switch
+                    {
+                        "Alta" => "badge-urgencia-alta",
+                        "Media" => "badge-urgencia-media",
+                        "Baja" => "badge-urgencia-baja",
+                        _ => "bg-secondary"
+                    };
+
+                    <h5 class="card-title text-primary">
+                        Ticket #@selectedTicket.TicketID: @selectedTicket.Titulo
+                    </h5>
+                    <p class="card-text mb-1">
+                        <strong>Descripción:</strong><br />
+                        @Html.Raw(
+                                 ((string)selectedTicket.Descripcion)?.Replace("\r\n", "<br />")
+                                 ?? "Sin descripción"
+                                 )
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Prioridad:</strong>
+                        <span class="badge @prioridadClassSel">
+                            @selectedTicket.Prioridad
+                        </span>
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Estado:</strong>
+                        <span class="badge bg-secondary">
+                            <!-- Asumimos que “EstadoID” lo mostraremos así; si necesitas el nombre de Estado, haz join en el controlador -->
+                            ID=@selectedTicket.EstadoID
+                        </span>
+                    </p>
+                    <p class="card-text mb-1">
+                        <strong>Creado por:</strong> <strong>@selectedTicket.NombreCreador</strong>
+                    </p>
+                    <p class="card-text mb-2">
+                        <strong>Fecha de Creación:</strong>
+                        @(((DateTime)selectedTicket.FechaCreacion).ToString("dd/MM/yyyy HH:mm"))
+                    </p>
+                    @if ((bool)(ViewBag.EsAdministrador ?? false))
+                    {
+                        @* Si es administrador, lo llevamos al Details del AsignacionController *@
+                        <a href="@Url.Action("Details", "Asignacion", new { id = selectedTicket.TicketID })"
+                           class="btn btn-primary btn-sm mt-2">
+                            <i class="bi bi-eye me-1"></i> Ver Detalles Completos
+                        </a>
+                    }
+                    else
+                    {
+                        @* Si es empleado/técnico, lo llevamos al chat de TicketChatController *@
+                        <a href="@Url.Action("Chat", "TicketChat", new { id = selectedTicket.TicketID, userId = ViewBag.SessionUserId })"
+                           class="btn btn-primary btn-sm mt-2">
+                            <i class="bi bi-chat-dots me-1"></i> Ver Detalles Completos
+                        </a>
+                    }
+
+
+                    <div class="comments-section">
+                        <h6>Comentarios:</h6>
+                        @if (comentarios != null && comentarios.Any())
+                        {
+                            @foreach (var comment in comentarios)
+                            {
+                                <div class="comment-item">
+                                    <p class="mb-0">@comment.Contenido</p>
+                                    <small>
+                                        <strong>@(comment.Usuario ?? "Usuario Desconocido")</strong> -
+                                        @(((DateTime)comment.FechaComentario).ToString("dd/MM/yyyy HH:mm"))
+                                    </small>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted">No hay comentarios para este ticket.</p>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+@* Ya no hace falta lógica AJAX: al hacer clic en un ticket recargamos la página y el controlador rellena ViewBag.SelectedTicket y ViewBag.Comentarios *@
+}

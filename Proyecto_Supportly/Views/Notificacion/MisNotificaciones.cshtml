@@ -1,0 +1,171 @@
+﻿@using Proyecto_Supportly.Models
+@inject SupportDBContext _context
+
+@{
+    ViewData["Title"] = "Mis Notificaciones";
+
+    // Recuperar lista de notificaciones pasada por el controlador
+    var notificaciones = ViewBag.Notificaciones as List<Notificaciones> ?? new List<Notificaciones>();
+
+    // Nombre del usuario destinatario (cargado en ViewBag desde el controller)
+    var nombreUsuario = ViewBag.NombreUsuario as string ?? "(Usuario)";
+
+    // ID de usuario en sesión para el formulario
+    var sessionUserId = Context.Session.GetInt32("UsuarioId") ?? 0;
+}
+
+<style>
+    body {
+        background-color: #bbdefb;
+    }
+
+    .main-page-header {
+        background-color: #007bff;
+        color: #fff;
+        padding: 1rem 1.5rem;
+        border-radius: .75rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .card {
+        border-radius: .75rem;
+        border: 1px solid #dee2e6;
+        box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+    }
+
+    .badge-urgencia-alta {
+        background-color: #dc3545;
+        color: #fff;
+    }
+
+    .badge-urgencia-media {
+        background-color: #ffc107;
+        color: #212529;
+    }
+
+    .badge-urgencia-baja {
+        background-color: #17a2b8;
+        color: #fff;
+    }
+
+    .card-text strong {
+        color: #343a40;
+    }
+</style>
+
+<div class="container mt-4">
+    <!-- Encabezado principal -->
+    <div class="main-page-header">
+        <h4 class="mb-0">
+            <i class="bi bi-bell-fill me-2"></i>
+            Mis Notificaciones – @nombreUsuario
+        </h4>
+        <div class="d-flex">
+            <button class="btn btn-light btn-sm me-2" onclick="location.reload();">
+                <i class="bi bi-arrow-clockwise"></i> Refrescar
+            </button>
+            <form asp-controller="Ticket" asp-action="MarcarTodasComoLeidas" method="post" class="d-inline">
+                <input type="hidden" name="usuarioId" value="@sessionUserId" />
+                <button type="submit" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-check-double"></i> Marcar todas como leídas
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @if (!notificaciones.Any())
+    {
+        <div class="alert alert-info text-center" role="alert">
+            No tienes notificaciones pendientes.
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var notificacion in notificaciones)
+            {
+                // 1) Obtener el ticket (sin AsNoTracking)
+                var ticket = _context.Tickets
+                .FirstOrDefault(t => t.TicketID == notificacion.TicketID);
+
+                // 2) Obtener el estado del ticket
+                Estados estado = null;
+                if (ticket != null)
+                {
+                    estado = _context.Estados
+                    .FirstOrDefault(e => e.EstadoID == ticket.EstadoID);
+                }
+
+                // 3) Obtener el creador del ticket
+                Usuarios creador = null;
+                if (ticket != null)
+                {
+                    creador = _context.Usuarios
+                    .FirstOrDefault(u => u.UsuarioID == ticket.UsuarioCreadorID);
+                }
+
+                // 4) Definir clase de badge según prioridad
+                string prioridadClass = "bg-secondary";
+                if (ticket != null)
+                {
+                    switch (ticket.Prioridad)
+                    {
+                        case "Alta":
+                            prioridadClass = "badge-urgencia-alta"; break;
+                        case "Media":
+                            prioridadClass = "badge-urgencia-media"; break;
+                        case "Baja":
+                            prioridadClass = "badge-urgencia-baja"; break;
+                    }
+                }
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                <i class="bi bi-ticket-fill me-2"></i>
+                                Ticket #@notificacion.TicketID: @(ticket?.Titulo ?? "N/A")
+                            </h5>
+                            <p class="card-text mb-1">
+                                <strong>Mensaje:</strong> @notificacion.Mensaje
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong>Fecha Envío:</strong>
+                                <small class="text-muted">@notificacion.FechaEnvio.ToString("dd/MM/yyyy HH:mm")</small>
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong>Urgencia:</strong>
+                                <span class="badge @prioridadClass">
+                                    @(ticket?.Prioridad ?? "N/A")
+                                </span>
+                            </p>
+                            <p class="card-text mb-1">
+                                <strong>Estado:</strong>
+                                <span class="badge bg-secondary">
+                                    @(estado?.Nombre ?? "N/A")
+                                </span>
+                            </p>
+                            <p class="card-text mb-2">
+                                <strong>Creado por:</strong>
+                                @(creador?.Nombre ?? "N/A")
+                            </p>
+                            <a asp-controller="Ticket"
+                               asp-action="Detalle"
+                               asp-route-id="@notificacion.TicketID"
+                               class="btn btn-primary btn-sm mt-2">
+                                <i class="bi bi-eye me-1"></i> Ver Detalles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.js"></script>
+}
