@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Proyecto_Supportly.Models;
+using Proyecto_Supportly.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -125,6 +126,65 @@ namespace Proyecto_Supportly.Controllers
 
                 // 4. Guardar cambios
                 await _context.SaveChangesAsync();
+
+                // ───────────────────────────────────────────────────────────────────────────
+                // 5. Después de guardar, enviar correos:
+                //    5.1. Obtener correo del empleado asignado
+                var empleadoAsignado = await _context.Usuarios
+                                                 .Where(u => u.UsuarioID == usuarioAsignadoId)
+                                                 .Select(u => new { u.Nombre, u.Email })
+                                                 .FirstOrDefaultAsync();
+
+                //    5.2. Obtener correo del creador del ticket
+                var creador = await _context.Usuarios
+                                      .Where(u => u.UsuarioID == ticket.UsuarioCreadorID)
+                                      .Select(u => new { u.Nombre, u.Email })
+                                      .FirstOrDefaultAsync();
+
+                //    5.3. Preparar instancia de servicio de correo
+                correo servicioCorreo = new correo(_configuration);
+
+                //    5.4. Armar asunto y cuerpo para el empleado asignado
+                if (empleadoAsignado != null)
+                {
+                    string asuntoEmpleado = $"Se te ha asignado el ticket #{ticket.TicketID}";
+                    string cuerpoEmpleado = $@"
+                Hola {empleadoAsignado.Nombre},
+                
+                Se te ha asignado el ticket con ID: {ticket.TicketID}.
+                Título del ticket: {ticket.Titulo ?? "(sin título)"}
+                Prioridad asignada: {ticket.Prioridad}
+                Fecha de asignación: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                Por favor, ingresa al sistema para revisar los detalles y proceder.
+                
+                Saludos,
+                Equipo de Soporte
+            ";
+                    servicioCorreo.enviar(empleadoAsignado.Email, asuntoEmpleado, cuerpoEmpleado);
+                }
+
+                //    5.5. Armar asunto y cuerpo para el creador del ticket
+                if (creador != null)
+                {
+                    string asuntoCreador = $"Tu ticket #{ticket.TicketID} ha sido asignado";
+                    string cuerpoCreador = $@"
+                Hola {creador.Nombre},
+                
+                Tu ticket con ID: {ticket.TicketID} ha sido asignado a {empleadoAsignado?.Nombre ?? "un usuario"}.
+                Título del ticket: {ticket.Titulo ?? "(sin título)"}
+                Prioridad actual: {ticket.Prioridad}
+                Fecha de asignación: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                Puedes hacer seguimiento ingresando al sistema de soporte.
+                
+                Saludos,
+                Equipo de Soporte
+            ";
+                    servicioCorreo.enviar(creador.Email, asuntoCreador, cuerpoCreador);
+                }
+                // ───────────────────────────────────────────────────────────────────────────
+
 
                 TempData["SuccessMessage"] = "Ticket asignado correctamente.";
 

@@ -214,7 +214,12 @@
                         </span>
                     </p>
                     <p class="card-text mb-1 d-flex align-items-center">
-                        <strong class="me-2">Estado:</strong>
+                        <strong class="me-2">Estado actual:</strong>
+                        @selectedTicket.EstadoNombre
+                    </p>
+
+                    <p class="card-text mb-1 d-flex align-items-center">
+                        <strong class="me-2">Cambiar Estado A:</strong>
                         @* Dropdown para cambiar estado *@
                         <form asp-action="UpdateStatus"
                               asp-controller="VerTickets"

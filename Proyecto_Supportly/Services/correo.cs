@@ -15,10 +15,10 @@ namespace Proyecto_Supportly.Services
         {
             try
             {
-                string connetionString = _configuration.GetSection("ConnectionStrings").GetSection("equiposDbConnection").Value;
+                string connetionString = _configuration.GetSection("ConnectionStrings").GetSection("SupportDBConnection").Value;
 
                 string sqlQuery = "exec msdb.dbo.sp_send_dbmail " +
-                  "                 @profile_name = 'SQLMail_Supportly', " +
+                  "                 @profile_name = 'SQLMail_PRUEBA', " +
                   "                 @recipients = @par_destinatarios, " +
                   "                 @subject = @par_asunto, " +
                   "                 @body = @par_mensaje ";

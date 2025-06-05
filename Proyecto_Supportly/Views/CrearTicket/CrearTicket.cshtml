@@ -21,7 +21,6 @@
     var dropboxLink = ViewBag.DropboxLink as string;
     var uploadedFileName = ViewBag.UploadedFileName as string;
 }
-}
 
 <!DOCTYPE html>
 <html>
@@ -350,6 +349,7 @@
                 <button type="submit">Subir a Dropbox</button>
             </form>
         </div>
+
 
         <!-- Toast de Notificación -->
         @if (!string.IsNullOrEmpty(uploadMessage))

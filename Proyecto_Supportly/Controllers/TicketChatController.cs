@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Proyecto_Supportly.Models;
+using Proyecto_Supportly.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,9 +15,12 @@ namespace Proyecto_Supportly.Controllers
     {
         private readonly SupportDBContext _context;
 
-        public TicketChatController(SupportDBContext context)
+        private IConfiguration _configuration;
+
+        public TicketChatController(SupportDBContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -139,6 +144,74 @@ namespace Proyecto_Supportly.Controllers
             _context.Tickets.Update(ticket);
             await _context.SaveChangesAsync();
 
+            // ───────────────────────────────────────────────────────────────────────────
+            // 3) Enviar correo al “receptor” (el usuario al que se le está respondiendo)
+            // Determinamos: si quien ejecuta la acción es el creador, entonces notificamos al asignado; 
+            // si es el asignado (Soporte), notificamos al creador.
+
+            // 3.1) Obtener datos del usuario que ejecutó (quien hizo el POST)
+            //      userId viene del formulario como “quien está enviando”
+            var usuarioEmisor = await _context.Usuarios.FindAsync(userId);
+
+            // 3.2) Recuperar a quién notificar
+            int destinatarioId;
+            // Si quien cambia estado ES el creador, el destinatario será el soporte asignado (si existe)
+            if (userId == ticket.UsuarioCreadorID)
+            {
+                // Buscamos la última asignación principal (ResponsablePrincipal = true)
+                var ultimaAsign = await _context.Asignaciones
+                    .Where(a => a.TicketID == ticketId && a.ResponsablePrincipal)
+                    .OrderByDescending(a => a.FechaAsignacion)
+                    .FirstOrDefaultAsync();
+
+                destinatarioId = ultimaAsign != null
+                    ? ultimaAsign.UsuarioAsignadoID
+                    : -1;
+            }
+            else
+            {
+                // Si quien cambia estado NO es el creador, asumimos que es Soporte, entonces notificamos al creador.
+                destinatarioId = ticket.UsuarioCreadorID;
+            }
+
+            if (destinatarioId > 0)
+            {
+                var destinatario = await _context.Usuarios.FindAsync(destinatarioId);
+                if (destinatario != null && !string.IsNullOrWhiteSpace(destinatario.Email))
+                {
+                    // Obtener nombre del estado
+                    var estadoNuevo = await _context.Estados
+                        .Where(e => e.EstadoID == newEstadoID)
+                        .Select(e => e.Nombre)
+                        .FirstOrDefaultAsync();
+
+                    // Construir asunto y cuerpo
+                    string asunto = $"Ticket #{ticket.TicketID}: estado actualizado a \"{estadoNuevo}\"";
+                    string cuerpo = $@"
+                        Hola {destinatario.Nombre},
+
+                        {(userId == ticket.UsuarioCreadorID
+                            ? $"El creador del ticket (ID {ticket.TicketID}) cambió el estado a \"{estadoNuevo}\"."
+                            : $"El técnico asignado ({usuarioEmisor.Nombre}) cambió el estado a \"{estadoNuevo}\".")}
+
+                        Título: {ticket.Titulo}
+                        Descripción: {ticket.Descripcion}
+                        Fecha de cambio: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                        Ingresa al sistema para más detalles.
+
+                        Saludos,
+                        Equipo de Soporte
+                    ";
+
+                    // Enviar correo
+                    var servicioCorreo = new correo(_configuration);
+                    servicioCorreo.enviar(destinatario.Email, asunto, cuerpo);
+                }
+            }
+            // ───────────────────────────────────────────────────────────────────────────
+
+
             return RedirectToAction("Chat", new { id = ticketId, userId = userId });
         }
 
@@ -182,6 +255,68 @@ namespace Proyecto_Supportly.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            // ───────────────────────────────────────────────────────────────────────────
+            // 4) Enviar correo al “receptor” (el otro participante)
+            // Determinamos: si el emisor ES el creador, entonces notificamos al Soporte Asignado; 
+            // si el emisor NO es el creador, asumimos que es Soporte y notificamos al creador.
+
+            // 4.1) Obtener datos del emisor
+            var usuarioEmisor = await _context.Usuarios.FindAsync(userId);
+
+            // 4.2) Determinar destinatario
+            int destinatarioId;
+            if (userId == ticket.UsuarioCreadorID)
+            {
+                // El creador envió el mensaje -> notificamos al soporte asignado
+                var ultimaAsign = await _context.Asignaciones
+                    .Where(a => a.TicketID == ticketId && a.ResponsablePrincipal)
+                    .OrderByDescending(a => a.FechaAsignacion)
+                    .FirstOrDefaultAsync();
+
+                destinatarioId = ultimaAsign != null
+                    ? ultimaAsign.UsuarioAsignadoID
+                    : -1;
+            }
+            else
+            {
+                // El que envía NO es el creador, asumimos que es Soporte -> notificamos al creador
+                destinatarioId = ticket.UsuarioCreadorID;
+            }
+
+            if (destinatarioId > 0)
+            {
+                var destinatario = await _context.Usuarios.FindAsync(destinatarioId);
+                if (destinatario != null && !string.IsNullOrWhiteSpace(destinatario.Email))
+                {
+                    string asunto = $"Nuevo mensaje en Ticket #{ticket.TicketID}";
+                    string cuerpo = $@"
+                        Hola {destinatario.Nombre},
+
+                        {(userId == ticket.UsuarioCreadorID
+                            ? $"El cliente ({usuarioEmisor.Nombre}) ha escrito un mensaje en el ticket #{ticket.TicketID}."
+                            : $"El técnico ({usuarioEmisor.Nombre}) ha respondido en el ticket #{ticket.TicketID}.")}
+
+                        Mensaje:
+                        ------------------------------
+                        {messageContent.Trim()}
+                        ------------------------------
+
+                        Fecha y hora: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                        Ingresa al sistema para ver la conversación completa y responder si es necesario.
+
+                        Saludos,
+                        Equipo de Soporte
+                    ";
+
+                    // Envío de correo
+                    var servicioCorreo = new correo(_configuration);
+                    servicioCorreo.enviar(destinatario.Email, asunto, cuerpo);
+                }
+            }
+            // ───────────────────────────────────────────────────────────────────────────
+
+
             return RedirectToAction("Chat", new { id = ticketId, userId = userId });
         }
 
@@ -203,6 +338,54 @@ namespace Proyecto_Supportly.Controllers
             ticket.FechaCierre = DateTime.Now;
             _context.Tickets.Update(ticket);
             await _context.SaveChangesAsync();
+
+            // ───────────────────────────────────────────────────────────────────────────
+            // 5) Enviar correo al otro participante notificando cierre de ticket
+            var usuarioEmisor = await _context.Usuarios.FindAsync(userId);
+
+            int destinatarioId;
+            if (userId == ticket.UsuarioCreadorID)
+            {
+                // El creador cerró -> notificamos al soporte asignado
+                var ultimaAsign = await _context.Asignaciones
+                    .Where(a => a.TicketID == ticketId && a.ResponsablePrincipal)
+                    .OrderByDescending(a => a.FechaAsignacion)
+                    .FirstOrDefaultAsync();
+
+                destinatarioId = ultimaAsign != null
+                    ? ultimaAsign.UsuarioAsignadoID
+                    : -1;
+            }
+            else
+            {
+                // El soporte cerró -> notificamos al creador
+                destinatarioId = ticket.UsuarioCreadorID;
+            }
+
+            if (destinatarioId > 0)
+            {
+                var destinatario = await _context.Usuarios.FindAsync(destinatarioId);
+                if (destinatario != null && !string.IsNullOrWhiteSpace(destinatario.Email))
+                {
+                    string asunto = $"Ticket #{ticket.TicketID} cerrado";
+                    string cuerpo = $@"
+                        Hola {destinatario.Nombre},
+
+                        {(userId == ticket.UsuarioCreadorID
+                            ? $"El cliente ({usuarioEmisor.Nombre}) ha cerrado el ticket #{ticket.TicketID}."
+                            : $"El técnico ({usuarioEmisor.Nombre}) ha cerrado el ticket #{ticket.TicketID}.")}
+
+                        Fecha de cierre: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                        Saludos,
+                        Equipo de Soporte
+                    ";
+
+                    var servicioCorreo = new correo(_configuration);
+                    servicioCorreo.enviar(destinatario.Email, asunto, cuerpo);
+                }
+            }
+            // ───────────────────────────────────────────────────────────────────────────
 
             return RedirectToAction("Chat", new { id = ticketId, userId = userId });
         }

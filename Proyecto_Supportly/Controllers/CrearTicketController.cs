@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Proyecto_Supportly.Models;
+using Proyecto_Supportly.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -156,6 +157,41 @@ namespace Proyecto_Supportly.Controllers
                 _context.Adjuntos.Add(nuevoAdjunto);
                 await _context.SaveChangesAsync();
             }
+
+            // ───────────────────────────────────────────────────────────────────────────
+            // 7. Enviar correo al creador del ticket notificando que su ticket fue creado
+            if (!string.IsNullOrWhiteSpace(usuario.Email))
+            {
+                // Construir asunto y cuerpo del correo
+                string asunto = $"Tu ticket #{ticket.TicketID} ha sido creado";
+                string cuerpo = $@"
+                    Hola {usuario.Nombre},
+
+                    Tu ticket con ID: {ticket.TicketID} ha sido creado exitosamente.
+                    
+                    Datos del ticket:
+                    ----------------------------
+                    Título        : {ticket.Titulo}
+                    Categoría     : {_context.Categorias
+                                        .Where(c => c.CategoriaID == ticket.CategoriaID)
+                                        .Select(c => c.Nombre)
+                                        .FirstOrDefault()}
+                    Prioridad     : {ticket.Prioridad}
+                    FechaCreación : {ticket.FechaCreacion:dd/MM/yyyy HH:mm}
+
+                    Descripción:
+                    {ticket.Descripcion}
+
+                    Para más detalles o seguimiento, ingresa al sistema de soporte.
+
+                    Saludos,
+                    Equipo de Soporte
+                ";
+
+                var servicioCorreo = new correo(_configuration);
+                servicioCorreo.enviar(usuario.Email, asunto, cuerpo);
+            }
+            // ───────────────────────────────────────────────────────────────────────────
 
             TempData["SuccessMessage"] = "Ticket creado correctamente.";
             return RedirectToAction("Index", "InterfazTicket");

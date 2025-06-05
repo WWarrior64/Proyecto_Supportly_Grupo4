@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Proyecto_Supportly.Models;
+using Proyecto_Supportly.Services;
 
 namespace Proyecto_Supportly.Controllers
 {
@@ -76,6 +77,7 @@ namespace Proyecto_Supportly.Controllers
                                 where t.EstadoID != ESTADO_CERRADO
                                 join u in _context.Usuarios
                                     on t.UsuarioCreadorID equals u.UsuarioID
+                                join e in _context.Estados on t.EstadoID equals e.EstadoID
                                 select new
                                 {
                                     t.TicketID,
@@ -87,6 +89,7 @@ namespace Proyecto_Supportly.Controllers
                                     t.CategoriaID,
                                     t.UsuarioCreadorID,
                                     NombreCreador = u.Nombre,
+                                    EstadoNombre = e.Nombre,
                                     FechaCierre = t.FechaCierre
                                 })
                                 .OrderByDescending(x => x.FechaCreacion)
@@ -180,22 +183,26 @@ namespace Proyecto_Supportly.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult UpdateStatus(int ticketId, int newEstadoID)
+        public async Task<IActionResult> UpdateStatus(int ticketId, int newEstadoID)
         {
+            // 1) Verificar sesión
             var usuarioIdEnSesion = HttpContext.Session.GetInt32("UsuarioId");
             if (usuarioIdEnSesion == null)
                 return RedirectToAction("Autenticar", "UsuarioLogin");
 
-            var currentUser = _context.Usuarios.FirstOrDefault(u => u.UsuarioID == usuarioIdEnSesion.Value);
+            // 2) Obtener currentUser y su rol
+            var currentUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.UsuarioID == usuarioIdEnSesion.Value);
             if (currentUser == null)
             {
                 HttpContext.Session.Clear();
                 return RedirectToAction("Autenticar", "UsuarioLogin");
             }
 
-            var rolUsuario = _context.Roles.FirstOrDefault(r => r.RolID == currentUser.RolID);
-            bool esAdministrador = rolUsuario != null && string.Equals(rolUsuario.Nombre, "Administrador", StringComparison.OrdinalIgnoreCase);
-            bool esSoporteTecnico = rolUsuario != null && string.Equals(rolUsuario.Nombre, "Soporte Técnico", StringComparison.OrdinalIgnoreCase);
+            var rolUsuario = await _context.Roles.FirstOrDefaultAsync(r => r.RolID == currentUser.RolID);
+            bool esAdministrador = rolUsuario != null &&
+                                   string.Equals(rolUsuario.Nombre, "Administrador", StringComparison.OrdinalIgnoreCase);
+            bool esSoporteTecnico = rolUsuario != null &&
+                                    string.Equals(rolUsuario.Nombre, "Soporte Técnico", StringComparison.OrdinalIgnoreCase);
 
             if (!esAdministrador && !esSoporteTecnico)
             {
@@ -203,16 +210,96 @@ namespace Proyecto_Supportly.Controllers
                 return RedirectToAction("Autenticar", "UsuarioLogin");
             }
 
-            var ticket = _context.Tickets.Find(ticketId);
-            if (ticket != null)
+            // 3) Buscar el ticket
+            var ticket = await _context.Tickets.FindAsync(ticketId);
+            if (ticket == null)
             {
-                ticket.EstadoID = newEstadoID;
-                ticket.FechaCierre = DateTime.Now;
-                _context.Tickets.Update(ticket);
-                _context.SaveChanges();
+                TempData["ErrorMessage"] = "Ticket no encontrado.";
+                return RedirectToAction("MisTicketsAsignados");
             }
 
-            // Redirigimos a MisTicketsAsignados indicando que siga con este ticketId seleccionado
+            // 4) Actualizar el estado y FechaCierre (si corresponde)
+            ticket.EstadoID = newEstadoID;
+            ticket.FechaCierre = DateTime.Now;
+            _context.Tickets.Update(ticket);
+            await _context.SaveChangesAsync();
+            // ───────────────────────────────────────────────────────────────────────────
+            // 5) Luego de guardar, notificar vía correo
+
+            // 5.1) Obtener datos del creador (cliente)
+            var creador = await _context.Usuarios
+                .Where(u => u.UsuarioID == ticket.UsuarioCreadorID)
+                .Select(u => new { u.Nombre, u.Email })
+                .FirstOrDefaultAsync();
+
+            // 5.2) Obtener el nombre del nuevo estado (para el cuerpo del correo)
+            var estadoNuevoNombre = await _context.Estados
+                .Where(e => e.EstadoID == newEstadoID)
+                .Select(e => e.Nombre)
+                .FirstOrDefaultAsync();
+
+            // 5.3) Obtener el empleado asignado actualmente (ResponsablePrincipal más reciente)
+            var asignPrincipal = await _context.Asignaciones
+                .Where(a => a.TicketID == ticketId && a.ResponsablePrincipal)
+                .OrderByDescending(a => a.FechaAsignacion)
+                .FirstOrDefaultAsync();
+
+            var empleadoAsignado = asignPrincipal != null
+                ? await _context.Usuarios
+                    .Where(u => u.UsuarioID == asignPrincipal.UsuarioAsignadoID)
+                    .Select(u => new { u.Nombre, u.Email })
+                    .FirstOrDefaultAsync()
+                : null;
+
+            // 5.4) Instanciar el servicio de correo
+            correo servicioCorreo = new correo(_configuration);
+
+            // 5.5) Enviar correo al creador del ticket (cliente)
+            if (creador != null && !string.IsNullOrWhiteSpace(creador.Email))
+            {
+                string asuntoCliente = $"Ticket #{ticket.TicketID}: estado actualizado";
+                string cuerpoCliente = $@"
+                    Hola {creador.Nombre},
+                    
+                    El estado de tu ticket con ID: {ticket.TicketID} ha cambiado.
+                    Nuevo estado: {estadoNuevoNombre}
+                    Fecha de cambio: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                    Título: {ticket.Titulo}
+                    Descripción: {ticket.Descripcion}
+
+                    Ingresa al sistema para más detalles.
+                    
+                    Saludos,
+                    Equipo de Soporte
+                ";
+                servicioCorreo.enviar(creador.Email, asuntoCliente, cuerpoCliente);
+            }
+
+            // 5.6) (Opcional) Enviar correo al empleado asignado
+            if (empleadoAsignado != null && !string.IsNullOrWhiteSpace(empleadoAsignado.Email))
+            {
+                string asuntoEmpleado = $"Ticket #{ticket.TicketID}: estado cambiado a \"{estadoNuevoNombre}\"";
+                string cuerpoEmpleado = $@"
+                    Hola {empleadoAsignado.Nombre},
+                    
+                    El ticket que tienes asignado (ID: {ticket.TicketID}) cambió de estado.
+                    Nuevo estado: {estadoNuevoNombre}
+                    Fecha de cambio: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+                    Título: {ticket.Titulo}
+                    Descripción: {ticket.Descripcion}
+
+                    Ingresa al sistema para verificar si requieres tomar alguna acción adicional.
+                    
+                    Saludos,
+                    Equipo de Soporte
+                ";
+                servicioCorreo.enviar(empleadoAsignado.Email, asuntoEmpleado, cuerpoEmpleado);
+            }
+            // ───────────────────────────────────────────────────────────────────────────
+
+            TempData["SuccessMessage"] = "Estado actualizado y notificaciones enviadas.";
             return RedirectToAction("MisTicketsAsignados", new { ticketId = ticketId });
         }
 
@@ -255,6 +342,40 @@ namespace Proyecto_Supportly.Controllers
                 };
                 _context.Comentarios.Add(nuevoComentario);
                 _context.SaveChanges();
+
+                // 2) Obtener los datos del ticket y del creador (cliente)
+                var ticket = _context.Tickets.FirstOrDefault(t => t.TicketID == ticketId);
+                if (ticket != null)
+                {
+                    var creador = _context.Usuarios.FirstOrDefault(u => u.UsuarioID == ticket.UsuarioCreadorID);
+                    if (creador != null && !string.IsNullOrWhiteSpace(creador.Email))
+                    {
+                        // 3) Armar asunto y cuerpo del correo
+                        string asunto = $"Se agregó un comentario en tu ticket #{ticket.TicketID}";
+                        string cuerpo = $@"
+                            Hola {creador.Nombre},
+
+                            Se ha agregado un nuevo comentario en tu ticket con ID {ticket.TicketID}.
+
+                            Contenido del comentario:
+                            --------------------------------------------
+                            {contenido.Trim()}
+                            --------------------------------------------
+
+                            Fecha y hora: {DateTime.Now:dd/MM/yyyy HH:mm}
+                            Usuario que comentó: {currentUser.Nombre}
+
+                            Ingresa al sistema para ver más detalles o responder.
+                            
+                            Saludos,
+                            Equipo de Soporte
+                        ";
+
+                        // 4) Enviar el correo usando tu servicio 'correo'
+                        var servicioCorreo = new correo(_configuration);
+                        servicioCorreo.enviar(creador.Email, asunto, cuerpo);
+                    }
+                }
             }
 
             // Redirigimos a la misma vista, indicando ticketId seleccionado
