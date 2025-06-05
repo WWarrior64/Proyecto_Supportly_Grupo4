@@ -128,6 +128,35 @@ namespace Proyecto_Supportly.Controllers
                 await _context.SaveChangesAsync();
 
                 // ───────────────────────────────────────────────────────────────────────────
+                // 4.0.1. Crear notificaciones en base de datos:
+                //    4.1. Notificar al empleado asignado
+                var notEmpleado = new Notificaciones
+                {
+                    TicketID = ticketId,
+                    UsuarioDestinatarioID = usuarioAsignadoId,
+                    Tipo = "Asignación",
+                    Mensaje = $"Se te ha asignado el ticket #{ticket.TicketID}.",
+                    FechaEnvio = DateTime.Now
+                };
+                _context.Notificaciones.Add(notEmpleado);
+
+                //    4.2. Notificar al creador del ticket
+                var notCreador = new Notificaciones
+                {
+                    TicketID = ticketId,
+                    UsuarioDestinatarioID = ticket.UsuarioCreadorID,
+                    Tipo = "Asignación",
+                    Mensaje = $"Tu ticket #{ticket.TicketID} ha sido asignado a un empleado (ID: {usuarioAsignadoId}).",
+                    FechaEnvio = DateTime.Now
+                };
+                _context.Notificaciones.Add(notCreador);
+
+                //    4.3. Guardar notificaciones
+                await _context.SaveChangesAsync();
+                // ───────────────────────────────────────────────────────────────────────────
+
+
+                // ───────────────────────────────────────────────────────────────────────────
                 // 5. Después de guardar, enviar correos:
                 //    5.1. Obtener correo del empleado asignado
                 var empleadoAsignado = await _context.Usuarios

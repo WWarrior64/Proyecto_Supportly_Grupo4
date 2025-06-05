@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Proyecto_Supportly.Models;
+using Proyecto_Supportly.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -167,6 +168,94 @@ namespace Proyecto_Supportly.Controllers
                 };
                 _context.Asignaciones.Add(asignacion);
                 await _context.SaveChangesAsync();
+
+                // ─────────────────────────────────────────────────────────────────────
+                // 3. Crear notificaciones:
+
+                // 3.1. Notificar al nuevo empleado asignado
+                var notEmpleado = new Notificaciones
+                {
+                    TicketID = ticketId,
+                    UsuarioDestinatarioID = usuarioAsignadoId,
+                    Tipo = "Asignación Secundaria",
+                    Mensaje = $"Se te ha asignado como segundo responsable del ticket #{ticket.TicketID}.",
+                    FechaEnvio = DateTime.Now
+                };
+                _context.Notificaciones.Add(notEmpleado);
+
+                // 3.2. Notificar al creador del ticket (cliente)
+                var notCreador = new Notificaciones
+                {
+                    TicketID = ticketId,
+                    UsuarioDestinatarioID = ticket.UsuarioCreadorID,
+                    Tipo = "Asignación Secundaria",
+                    Mensaje = $"Tu ticket #{ticket.TicketID} ha recibido un segundo responsable (ID: {usuarioAsignadoId}).",
+                    FechaEnvio = DateTime.Now
+                };
+                _context.Notificaciones.Add(notCreador);
+
+                // 3.3. Guardar las notificaciones
+                await _context.SaveChangesAsync();
+
+                // ─────────────────────────────────────────────────────────────────────
+
+                // 4. Enviar correos:
+
+                // 4.1. Obtener correo del nuevo empleado asignado
+                var empleadoAsignado = await _context.Usuarios
+                    .Where(u => u.UsuarioID == usuarioAsignadoId)
+                    .Select(u => new { u.Nombre, u.Email })
+                    .FirstOrDefaultAsync();
+
+                // 4.2. Obtener correo del creador del ticket
+                var creador = await _context.Usuarios
+                    .Where(u => u.UsuarioID == ticket.UsuarioCreadorID)
+                    .Select(u => new { u.Nombre, u.Email })
+                    .FirstOrDefaultAsync();
+
+                // 4.3. Instanciar servicio de correo
+                var servicioCorreo = new correo(_configuration);
+
+                // 4.4. Armar asunto y cuerpo para el nuevo empleado asignado
+                if (empleadoAsignado != null && !string.IsNullOrWhiteSpace(empleadoAsignado.Email))
+                {
+                    string asuntoEmpleado = $"Se te ha asignado como segundo responsable del ticket #{ticket.TicketID}";
+                    string cuerpoEmpleado = $@"
+Hola {empleadoAsignado.Nombre},
+
+Has sido asignado como segundo responsable para el ticket con ID: {ticket.TicketID}.
+Título del ticket: {ticket.Titulo}
+Prioridad: {ticket.Prioridad}
+Fecha de asignación: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+Por favor, ingresa al sistema para revisar los detalles y gestionar lo que corresponda.
+
+Saludos,
+Equipo de Soporte
+";
+                    servicioCorreo.enviar(empleadoAsignado.Email, asuntoEmpleado, cuerpoEmpleado);
+                }
+
+                // 4.5. Armar asunto y cuerpo para el creador del ticket
+                if (creador != null && !string.IsNullOrWhiteSpace(creador.Email))
+                {
+                    string asuntoCreador = $"Tu ticket #{ticket.TicketID} tiene un segundo responsable asignado";
+                    string cuerpoCreador = $@"
+Hola {creador.Nombre},
+
+Tu ticket con ID: {ticket.TicketID} ahora cuenta con un segundo responsable (Empleado: {empleadoAsignado?.Nombre ?? "ID " + usuarioAsignadoId}).
+Título del ticket: {ticket.Titulo}
+Prioridad: {ticket.Prioridad}
+Fecha de asignación: {DateTime.Now:dd/MM/yyyy HH:mm}
+
+Puedes ingresar al sistema para ver quién es y hacer seguimiento.
+
+Saludos,
+Equipo de Soporte
+";
+                    servicioCorreo.enviar(creador.Email, asuntoCreador, cuerpoCreador);
+                }
+                // ─────────────────────────────────────────────────────────────────────
 
                 TempData["Exito"] = "Segundo empleado asignado correctamente.";
             }
