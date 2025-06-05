@@ -6,6 +6,7 @@
     var ticketTitle = ViewBag.TicketTitle as string;
     var creationDate = ViewBag.CreationDate as string;
     var ticketPriority = ViewBag.TicketPriority as string;
+    var ticketDescription = ViewBag.TicketDescription as string;
     var ticketStatus = ViewBag.TicketStatus as string;
     var chatMessages = ViewBag.ChatMessages as List<dynamic> ?? new List<dynamic>();
     var companyName = ViewBag.CompanyName as string;
@@ -15,6 +16,7 @@
     var messageType = ViewBag.MessageType as string;
     var dropboxLink = ViewBag.DropboxLink as string;
     var uploadedFileName = ViewBag.UploadedFileName as string;
+    var esSoporte = (bool)(ViewBag.IsSoporte ?? false);
 }
 
 <!DOCTYPE html>
@@ -315,15 +317,49 @@
             <div class="info-item full-width">
                 Ticket de Soporte #@ticketId – @ticketTitle
             </div>
+            @* Mostrar descripción *@
+            <div class="info-item full-width">
+                <strong>Descripción:</strong><br />
+                @Html.Raw(ticketDescription)
+            </div>
             <div class="info-item">
                 <strong>Prioridad:</strong> @ticketPriority
             </div>
             <div class="info-item">
                 <strong>Creado:</strong> @creationDate
             </div>
-            <div class="info-item">
-                <strong>Estado:</strong> @ticketStatus
-            </div>
+            @* Si es Soporte Tecnico, muestro <form> con dropdown para cambiar estado *@
+            @* Si es Soporte Tecnico, muestro <form> con dropdown para cambiar estado *@
+            @if (esSoporte)
+            {
+                <div class="info-item">
+                    <form asp-action="UpdateStatus"
+                          asp-controller="TicketChat"
+                          method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="ticketId" value="@ticketId" />
+                        <input type="hidden" name="userId" value="@sessionUserId" />
+
+                        <label for="newEstadoID"><strong>Seleccionar Estado:</strong></label>
+                        @Html.DropDownList(
+                                 "newEstadoID",
+                                 (SelectList)ViewBag.EstadosList,
+                                 new
+                                 {
+                                     @class = "form-control",
+                                     onchange = "this.form.submit()"
+                                 }
+                                 )
+                    </form>
+                </div>
+            }
+            else
+            {
+                @* Si NO es Soporte, solo muestro el texto estático del estado *@
+                <div class="info-item">
+                    <strong>Estado:</strong> @ticketStatus
+                </div>
+            }
         </div>
 
         @* --- Chat Box: burbujas de mensajes --- *@

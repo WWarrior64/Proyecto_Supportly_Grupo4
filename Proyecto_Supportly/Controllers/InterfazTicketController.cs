@@ -66,6 +66,8 @@ namespace Proyecto_Supportly.Controllers
                 // 6. Para empleados, cargamos “tickets asignados” de la tabla Asignaciones,
                 //    filtrando solo aquellos donde a.UsuarioAsignadoID == userId
                 //    y donde el ticket NO esté cerrado, por ejemplo.
+                const int ESTADO_CERRADO_ID = 4;
+
                 var assignedTickets = await (
                     from a in _context.Asignaciones.AsNoTracking()
                     join t in _context.Tickets.AsNoTracking() on a.TicketID equals t.TicketID
@@ -73,6 +75,7 @@ namespace Proyecto_Supportly.Controllers
                     from e in estadoJoin2.DefaultIfEmpty()
                     where a.UsuarioAsignadoID == userId.Value
                           && a.ResponsablePrincipal == true // solo responsable principal
+                          && t.EstadoID != ESTADO_CERRADO_ID
                     orderby t.FechaCreacion descending
                     select new
                     {

@@ -12,10 +12,12 @@ namespace Proyecto_Supportly.Controllers
     public class CrearTicketController : Controller
     {
         private readonly SupportDBContext _context;
+        private IConfiguration _configuration;
 
-        public CrearTicketController(SupportDBContext context)
+        public CrearTicketController(SupportDBContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         /// <summary>

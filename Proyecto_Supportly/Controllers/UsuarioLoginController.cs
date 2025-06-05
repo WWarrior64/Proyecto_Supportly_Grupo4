@@ -48,6 +48,7 @@ namespace Proyecto_Supportly.Controllers
                 HttpContext.Session.SetInt32("UsuarioId", usuario.UsuarioID);
                 HttpContext.Session.SetString("Nombre", usuario.Nombre);
                 HttpContext.Session.SetString("Correo", usuario.Email);
+                HttpContext.Session.SetInt32("RolId", usuario.RolID);
                 HttpContext.Session.SetString("TipoUsuario", usuario.TipoUsuario);
 
                 // Obtener nombre del rol desde BD para asegurarnos

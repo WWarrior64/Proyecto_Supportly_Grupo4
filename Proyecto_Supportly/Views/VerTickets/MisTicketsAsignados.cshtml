@@ -3,17 +3,14 @@
 @{
     ViewData["Title"] = "Mis Tickets Asignados";
 
-    // En el controlador cargamos ViewBag.TicketsAsignados como List<objetoAnónimo>
+    // Datos que cargó el controlador:
     var ticketsAsignados = ViewBag.TicketsAsignados as List<dynamic>;
-
-    // El ticket seleccionado (si existe), también es un objeto anónimo con los mismos campos
     var selectedTicket = ViewBag.SelectedTicket as dynamic;
-
-    // Nombre del usuario logueado (vista “Mis Tickets Asignados”)
     var nombreUsuario = ViewBag.NombreUsuario as string;
-
-    // Lista de comentarios (objeto anónimo con Contenido, Usuario y FechaComentario)
     var comentarios = ViewBag.Comentarios as List<dynamic>;
+    var esAdmin = (bool)(ViewBag.EsAdministrador ?? false);
+    var estadosList = ViewBag.EstadosList as Microsoft.AspNetCore.Mvc.Rendering.SelectList;
+    var sessionUserId = (int)(ViewBag.SessionUserId ?? 0);
 }
 
 <style>
@@ -103,11 +100,9 @@
         <!-- Columna izquierda: lista de tickets -->
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
-                        <i class="bi bi-ticket-fill me-2"></i>
-                        @* Usamos ViewBag.EsAdministrador para decidir el texto *@
-                        @if ((bool)(ViewBag.EsAdministrador ?? false))
+                        @if (esAdmin)
                         {
                             @:Tickets
                         }
@@ -116,9 +111,7 @@
                             @:Tickets Asignados a @nombreUsuario
                         }
                     </h4>
-                    <!-- Botón para ir al historial de tickets cerrados -->
-                    <a href="@Url.Action("HistorialTickets", "VerTickets")"
-                       class="btn btn-light btn-sm">
+                    <a href="@Url.Action("HistorialTickets", "VerTickets")" class="btn btn-light btn-sm">
                         <i class="bi bi-clock-history me-1"></i> Historial
                     </a>
                 </div>
@@ -126,7 +119,7 @@
                     @if (ticketsAsignados == null || !ticketsAsignados.Any())
                     {
                         <p class="p-3 mb-0 text-muted">
-                            No hay tickets asignados a este usuario.
+                            No hay tickets para mostrar.
                         </p>
                     }
                     else
@@ -173,12 +166,11 @@
                         Selecciona un ticket para ver los detalles
                     </h5>
                     <p class="text-muted">
-                        Aquí aparecerá la descripción completa, otros detalles y los comentarios del ticket.
+                        Aquí aparecerá la descripción, estado, prioridad y comentarios del ticket.
                     </p>
                 }
                 else
                 {
-                    @* Ya estamos dentro de código Razor/C#: DECLARAMOS directamente la variable sin usar @{ ... } *@
                     string prioridadClassSel = selectedTicket.Prioridad switch
                     {
                         "Alta" => "badge-urgencia-alta",
@@ -190,6 +182,24 @@
                     <h5 class="card-title text-primary">
                         Ticket #@selectedTicket.TicketID: @selectedTicket.Titulo
                     </h5>
+
+                    @* — Botón “Ver Detalles Completos” para Administrador — *@
+                    @if (esAdmin)
+                    {
+                        <a href="@Url.Action("Details", "Asignacion", new { id = selectedTicket.TicketID })"
+                           class="btn btn-sm btn-warning mb-3">
+                            <i class="bi bi-gear-fill me-1"></i> Ver Detalles Completos
+                        </a>
+                    }
+                    else
+                    {
+                        @* — Botón “Ir al Chat” para empleado/técnico — *@
+                        <a href="@Url.Action("Chat", "TicketChat", new { id = selectedTicket.TicketID, userId = sessionUserId })"
+                           class="btn btn-sm btn-info mb-3">
+                            <i class="bi bi-chat-dots me-1"></i> Ir al Chat
+                        </a>
+                    }
+
                     <p class="card-text mb-1">
                         <strong>Descripción:</strong><br />
                         @Html.Raw(
@@ -203,12 +213,27 @@
                             @selectedTicket.Prioridad
                         </span>
                     </p>
-                    <p class="card-text mb-1">
-                        <strong>Estado:</strong>
-                        <span class="badge bg-secondary">
-                            <!-- Asumimos que “EstadoID” lo mostraremos así; si necesitas el nombre de Estado, haz join en el controlador -->
-                            ID=@selectedTicket.EstadoID
-                        </span>
+                    <p class="card-text mb-1 d-flex align-items-center">
+                        <strong class="me-2">Estado:</strong>
+                        @* Dropdown para cambiar estado *@
+                        <form asp-action="UpdateStatus"
+                              asp-controller="VerTickets"
+                              method="post"
+                              style="display:inline-block;"
+                              class="mb-0">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ticketId" value="@selectedTicket.TicketID" />
+
+                            @Html.DropDownList(
+                                     "newEstadoID",
+                                     estadosList,
+                                     new
+                                     {
+                                         @class = "form-control form-select form-select-sm",
+                                         onchange = "this.form.submit()"
+                                     }
+                                     )
+                        </form>
                     </p>
                     <p class="card-text mb-1">
                         <strong>Creado por:</strong> <strong>@selectedTicket.NombreCreador</strong>
@@ -217,23 +242,23 @@
                         <strong>Fecha de Creación:</strong>
                         @(((DateTime)selectedTicket.FechaCreacion).ToString("dd/MM/yyyy HH:mm"))
                     </p>
-                    @if ((bool)(ViewBag.EsAdministrador ?? false))
-                    {
-                        @* Si es administrador, lo llevamos al Details del AsignacionController *@
-                        <a href="@Url.Action("Details", "Asignacion", new { id = selectedTicket.TicketID })"
-                           class="btn btn-primary btn-sm mt-2">
-                            <i class="bi bi-eye me-1"></i> Ver Detalles Completos
-                        </a>
-                    }
-                    else
-                    {
-                        @* Si es empleado/técnico, lo llevamos al chat de TicketChatController *@
-                        <a href="@Url.Action("Chat", "TicketChat", new { id = selectedTicket.TicketID, userId = ViewBag.SessionUserId })"
-                           class="btn btn-primary btn-sm mt-2">
-                            <i class="bi bi-chat-dots me-1"></i> Ver Detalles Completos
-                        </a>
-                    }
+                    <p class="card-text mb-2">
+                        <strong>Fecha de Cierre:</strong>
+                        @{
+                            // Aquí comprobamos que FechaCierre no sea null antes de formatear
+                            var cierre = (DateTime?)selectedTicket.FechaCierre;
+                            if (cierre.HasValue)
+                            {
+                                @cierre.Value.ToString("dd/MM/yyyy HH:mm")
+                            }
+                            else
+                            {
+                                <em>No disponible</em>
+                            }
+                        }
+                    </p>
 
+                    <hr />
 
                     <div class="comments-section">
                         <h6>Comentarios:</h6>
@@ -255,6 +280,29 @@
                             <p class="text-muted">No hay comentarios para este ticket.</p>
                         }
                     </div>
+
+                    @* Solo Administrador ve el área para agregar comentario *@
+                    @if (esAdmin)
+                    {
+                        <hr />
+                        <h6>Agregar comentario (solo Administrador):</h6>
+                        <form asp-action="AddComment"
+                              asp-controller="VerTickets"
+                              method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="ticketId" value="@selectedTicket.TicketID" />
+                            <div class="mb-2">
+                                <textarea name="contenido"
+                                          class="form-control"
+                                          rows="3"
+                                          placeholder="Escribe tu comentario..."
+                                          required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-success">
+                                <i class="bi bi-plus-circle me-1"></i> Enviar comentario
+                            </button>
+                        </form>
+                    }
                 }
             </div>
         </div>
@@ -263,5 +311,4 @@
 
 @section Scripts {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
-@* Ya no hace falta lógica AJAX: al hacer clic en un ticket recargamos la página y el controlador rellena ViewBag.SelectedTicket y ViewBag.Comentarios *@
 }

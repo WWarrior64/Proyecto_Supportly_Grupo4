@@ -13,9 +13,12 @@ namespace Proyecto_Supportly.Controllers
     {
         private readonly SupportDBContext _context;
 
-        public AsignacionController(SupportDBContext context)
+        private IConfiguration _configuration;
+
+        public AsignacionController(SupportDBContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -73,6 +76,7 @@ namespace Proyecto_Supportly.Controllers
 
             // 8. Drop‐down de usuarios internos
             ViewBag.UsuariosInternos = await _context.Usuarios
+                .Where(u => u.TipoUsuario == "Interno")
                 .OrderBy(u => u.Nombre)
                 .Select(u => new SelectListItem
                 {

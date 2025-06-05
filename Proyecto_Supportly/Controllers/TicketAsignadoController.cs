@@ -12,10 +12,12 @@ namespace Proyecto_Supportly.Controllers
     public class TicketAsignadoController : Controller
     {
         private readonly SupportDBContext _context;
+        private IConfiguration _configuration;
 
-        public TicketAsignadoController(SupportDBContext context)
+        public TicketAsignadoController(SupportDBContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         /// <summary>
@@ -115,6 +117,7 @@ namespace Proyecto_Supportly.Controllers
 
             // 9. Lista de usuarios internos disponibles
             var usuariosInternos = await _context.Usuarios
+                .Where(u => u.TipoUsuario == "Interno")
                 .OrderBy(u => u.Nombre)
                 .Select(u => new SelectListItem
                 {

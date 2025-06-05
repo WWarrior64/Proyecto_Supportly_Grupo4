@@ -138,11 +138,15 @@ namespace Proyecto_Supportly.Controllers
 
             const int ESTADO_ABIERTO = 1;
             const int ESTADO_EN_PROCESO = 2;
-            const int ESTADO_CERRADO = 3;
+            const int ESTADO_RESUELTO = 3;
+            const int ESTADO_CERRADO = 4;
+            const int ESTADO_PENDIENTE = 5;
 
             ViewBag.TicketsAbiertos = ticketsList.Count(t => t.EstadoID == ESTADO_ABIERTO);
             ViewBag.TicketsEnProceso = ticketsList.Count(t => t.EstadoID == ESTADO_EN_PROCESO);
+            ViewBag.TicketsResueltos = ticketsList.Count(t => t.EstadoID == ESTADO_RESUELTO);
             ViewBag.TicketsCerrados = ticketsList.Count(t => t.EstadoID == ESTADO_CERRADO);
+            ViewBag.TicketsPendientes = ticketsList.Count(t => t.EstadoID == ESTADO_PENDIENTE);
 
             if (ticketsConCierre.Any())
             {
@@ -198,12 +202,16 @@ namespace Proyecto_Supportly.Controllers
             var countAbiertos = ticketsList.Count(t => t.EstadoID == ESTADO_ABIERTO);
             var countEnProceso = ticketsList.Count(t => t.EstadoID == ESTADO_EN_PROCESO);
             var countCerrados = ticketsList.Count(t => t.EstadoID == ESTADO_CERRADO);
+            var countResueltos = ticketsList.Count(t => t.EstadoID == ESTADO_RESUELTO);
+            var countPendientes = ticketsList.Count(t => t.EstadoID == ESTADO_PENDIENTE);
 
             var pieData = new[]
             {
                 new { label = "Abiertos",    value = countAbiertos,  color = "#FF6384" },
                 new { label = "En Proceso",  value = countEnProceso, color = "#36A2EB" },
-                new { label = "Cerrados",    value = countCerrados,  color = "#FFCE56" }
+                new { label = "Resueltos",   value = countResueltos, color = "#90EE90" },
+                new { label = "Cerrados",    value = countCerrados,  color = "#FFCE56" },
+                new { label = "Pendientes",  value = countPendientes,color = "#FFA500" },
             };
             ViewBag.PieChartDataJson = JsonConvert.SerializeObject(pieData);
 

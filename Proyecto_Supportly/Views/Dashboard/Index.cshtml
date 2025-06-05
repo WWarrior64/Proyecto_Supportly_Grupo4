@@ -5,6 +5,13 @@
 }
 
 <style>
+    body {
+        /* Degradado de azul cielo */
+        background-color: #e6e6fa !important;
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+    }
     /* Custom styles for the dashboard elements */
     .dashboard-card {
         background-color: #fff;
@@ -42,7 +49,7 @@
 
     .chart-container {
         background-color: #fff;
-        padding: 20px;
+        padding: 50px;
         border-radius: 8px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         margin-bottom: 30px;
@@ -67,7 +74,6 @@
         <a href="@Url.Action("MisTicketsAsignados", "VerTickets")" class="btn btn-primary-custom">
             Vista Tickets
         </a>
-
     </div>
 
     @using (Html.BeginForm("Index", "Dashboard", FormMethod.Get, new { @class = "form-inline mb-4" }))
@@ -97,9 +103,7 @@
             @* ==== Bloque “Empleados” ==== *@
             @if (ViewBag.SelectedFilterType == "Empleados")
             {
-                @* IMPORTANTE: guardamos en hidden el filterType para que, al cambiar el dropdown, se envíe “Empleados” *@
                 <input type="hidden" name="filterType" value="Empleados" />
-
                 <span class="ml-2">
                     @Html.DropDownList(
                              "employeeId",
@@ -112,9 +116,7 @@
             @* ==== Bloque “Mes” ==== *@
             @if (ViewBag.SelectedFilterType == "Mes")
             {
-                @* IMPORTANTE: guardamos en hidden el filterType para que siga enviando “Mes” al cambiar valor *@
                 <input type="hidden" name="filterType" value="Mes" />
-
                 <span class="ml-2">
                     @Html.DropDownList(
                              "month",
@@ -136,9 +138,7 @@
             @* ==== Bloque “Personalizado” ==== *@
             @if (ViewBag.SelectedFilterType == "Personalizado")
             {
-                @* IMPORTANTE: guardamos en hidden el filterType para que siga enviando “Personalizado” *@
                 <input type="hidden" name="filterType" value="Personalizado" />
-
                 <span class="ml-2">
                     Fecha Inicio:
                     <input id="startDate"
@@ -164,6 +164,7 @@
         </div>
     }
 
+    @* --- Primera fila de métricas: Generados, Atendidos, Abiertos, En Proceso --- *@
     <div class="row mb-4">
         <div class="col-md-3 col-sm-6">
             <div class="card dashboard-card">
@@ -199,7 +200,16 @@
         </div>
     </div>
 
+    @* --- Segunda fila de métricas: Resueltos, Cerrados, Pendientes, Tiempo Promedio --- *@
     <div class="row mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
+                    <h5 class="card-title">Resueltos</h5>
+                    <p class="card-text">@ViewBag.TicketsResueltos</p>
+                </div>
+            </div>
+        </div>
         <div class="col-md-3 col-sm-6">
             <div class="card dashboard-card small-card">
                 <div class="card-body">
@@ -211,20 +221,31 @@
         <div class="col-md-3 col-sm-6">
             <div class="card dashboard-card small-card">
                 <div class="card-body">
+                    <h5 class="card-title">Pendientes</h5>
+                    <p class="card-text">@ViewBag.TicketsPendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card dashboard-card small-card">
+                <div class="card-body">
                     <h5 class="card-title">Tiempo prom. resolución</h5>
                     <p class="card-text">@ViewBag.TiempoPromedioResolucion</p>
                 </div>
             </div>
         </div>
+    </div>
+
+    @* --- Gráfico de pastel “Actualmente” --- *@
+    <div class="row mb-4">
         <div class="col-md-6">
             <div class="chart-container">
                 <h5 class="mb-3">Actualmente:</h5>
                 <canvas id="pieChart"></canvas>
             </div>
         </div>
-    </div>
 
-    <div class="row mb-4">
+        @* --- Métricas de categoría y mes productivo --- *@
         <div class="col-md-3 col-sm-6">
             <div class="card dashboard-card small-card">
                 <div class="card-body">
@@ -241,15 +262,16 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    @* --- Gráfico de línea “Tendencias Mensuales” y otra métrica --- *@
+    <div class="row mb-4">
         <div class="col-md-6">
             <div class="chart-container">
                 <h5 class="mb-3">Tendencias Mensuales de Tickets</h5>
                 <canvas id="lineChart"></canvas>
             </div>
         </div>
-    </div>
-
-    <div class="row mb-4">
         <div class="col-md-3 col-sm-6">
             <div class="card dashboard-card small-card">
                 <div class="card-body">
@@ -266,7 +288,6 @@
                 </div>
             </div>
         </div>
-        @* Rellenar columnas adicionales si es necesario *@
     </div>
 </div>
 

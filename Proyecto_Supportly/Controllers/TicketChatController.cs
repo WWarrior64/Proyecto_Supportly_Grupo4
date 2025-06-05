@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Proyecto_Supportly.Models;
 using System;
@@ -25,10 +26,21 @@ namespace Proyecto_Supportly.Controllers
         {
             var sessionUserId = HttpContext.Session.GetInt32("UsuarioId");
             if (sessionUserId == null)
+                return RedirectToAction("Autenticar", "UsuarioLogin");
+
+            // 1) Traer al usuario de la sesión (sin Include, basta con FindAsync o FirstOrDefaultAsync):
+            var usuarioSesion = await _context.Usuarios
+                                             .FirstOrDefaultAsync(u => u.UsuarioID == sessionUserId.Value);
+            if (usuarioSesion == null)
             {
-                // Redirige al login u otro manejo
+                HttpContext.Session.Clear();
                 return RedirectToAction("Autenticar", "UsuarioLogin");
             }
+
+            // 2) Con el RolID del usuario, obtengo el nombre del rol:
+            var rolEnSesion = await _context.Roles
+                                           .FindAsync(usuarioSesion.RolID);
+            ViewBag.IsSoporte = (rolEnSesion?.Nombre == "Soporte Técnico");
 
             ViewBag.SessionUserId = sessionUserId.Value;
 
@@ -46,8 +58,16 @@ namespace Proyecto_Supportly.Controllers
             ViewBag.TicketTitle = ticket.Titulo;
             ViewBag.CreationDate = ticket.FechaCreacion.ToString("yyyy-MM-dd HH:mm");
             ViewBag.TicketPriority = ticket.Prioridad;
+            ViewBag.TicketDescription = ticket.Descripcion;
             var estado = await _context.Estados.FindAsync(ticket.EstadoID);
             ViewBag.TicketStatus = estado?.Nombre ?? "Desconocido";
+
+            // Cargar lista de estados para el dropdown y marcar el actual:
+            var estadosLista = await _context.Estados
+                                             .OrderBy(e => e.Nombre)
+                                             .ToListAsync();
+            ViewBag.EstadosList = new SelectList(estadosLista, "EstadoID", "Nombre", ticket.EstadoID);
+            ViewBag.CurrentEstadoID = ticket.EstadoID;
 
             // 4. Cargar todos los comentarios de este ticket
             var comentarios = await _context.Comentarios
@@ -101,6 +121,25 @@ namespace Proyecto_Supportly.Controllers
             }
 
             return View();
+        }
+
+        /// <summary>
+        /// POST: /TicketChat/UpdateStatus
+        /// Cambia el estado del ticket al seleccionado.
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateStatus(int ticketId, int userId, int newEstadoID)
+        {
+            var ticket = await _context.Tickets.FindAsync(ticketId);
+            if (ticket == null)
+                return NotFound();
+
+            ticket.EstadoID = newEstadoID;
+            _context.Tickets.Update(ticket);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction("Chat", new { id = ticketId, userId = userId });
         }
 
         /// <summary>
