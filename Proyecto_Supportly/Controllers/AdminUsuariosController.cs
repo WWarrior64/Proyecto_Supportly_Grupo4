@@ -83,7 +83,6 @@ public class AdminUsuariosController : Controller
 
         try
         {
-            nuevoUsuario.EstadoUsuario = true;
 
             _context.Usuarios.Add(nuevoUsuario);
             await _context.SaveChangesAsync();
@@ -149,7 +148,6 @@ public class AdminUsuariosController : Controller
 
         try
         {
-            nuevoUsuario.EstadoUsuario = true; // siempre activo al crear
 
             // 4. Insertar en BD
             _context.Usuarios.Add(nuevoUsuario);

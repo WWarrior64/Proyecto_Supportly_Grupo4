@@ -41,6 +41,20 @@ namespace Proyecto_Supportly.Controllers
                            && u.Contraseña == txtpassword
                            select u).FirstOrDefault();
 
+            // 2) Si no existe, devolvemos error
+            if (usuario == null)
+            {
+                ViewData["ErrorMessage"] = "Error, usuario inválido.";
+                return View();
+            }
+
+            // 3) Si existe, verificamos si está activo (campo booleano Activo == true)
+            if (!usuario.EstadoUsuario)  // <-- Aquí asumimos que la propiedad se llama "Activo"
+            {
+                ViewData["ErrorMessage"] = "Tu cuenta está inactiva. Contacta al administrador.";
+                return View();
+            }
+
             //Si el usuario existe con todas sus validaciones 
             if (usuario != null)
             {
