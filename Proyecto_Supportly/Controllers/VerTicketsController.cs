@@ -53,8 +53,8 @@ namespace Proyecto_Supportly.Controllers
             // 4) Determinar si es Administrador, Empleado o Técnico
             //    Se asume que Roles.Nombre contiene cadenas como "Administrador", "Empleado" o "Técnico".
             bool esAdministrador = string.Equals(rolUsuario.Nombre, "Administrador", StringComparison.OrdinalIgnoreCase);
-            bool esEmpleadoOtecnico = string.Equals(rolUsuario.Nombre, "Empleado", StringComparison.OrdinalIgnoreCase)
-                                      || string.Equals(rolUsuario.Nombre, "Técnico", StringComparison.OrdinalIgnoreCase);
+            bool esEmpleadoOtecnico = string.Equals(rolUsuario.Nombre, "Soporte Técnico", StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(rolUsuario.Nombre, "Soporte Técnico", StringComparison.OrdinalIgnoreCase);
 
             ViewBag.EsAdministrador = esAdministrador;
 
@@ -186,8 +186,8 @@ namespace Proyecto_Supportly.Controllers
             }
 
             bool esAdministrador = string.Equals(rolUsuario.Nombre, "Administrador", StringComparison.OrdinalIgnoreCase);
-            bool esEmpleadoOtecnico = string.Equals(rolUsuario.Nombre, "Empleado", StringComparison.OrdinalIgnoreCase)
-                                      || string.Equals(rolUsuario.Nombre, "Técnico", StringComparison.OrdinalIgnoreCase);
+            bool esEmpleadoOtecnico = string.Equals(rolUsuario.Nombre, "Soporte Técnico", StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(rolUsuario.Nombre, "Soporte Técnico", StringComparison.OrdinalIgnoreCase);
 
             // 4) Construir la lista de tickets cerrados según el rol:
             //    condicion: FechaCierre != null (o podrías filtrar por EstadoID == 3 si "3" es Cerrado)

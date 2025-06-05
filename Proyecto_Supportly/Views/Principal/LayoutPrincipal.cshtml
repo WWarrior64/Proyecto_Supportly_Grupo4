@@ -76,16 +76,91 @@
                 background-color: #4a148c;
                 border-color: #4a148c;
             }
+
+        /* Estilos generales del footer */
+        .footer {
+            background-color: #f8f9fa; /* Un fondo claro para contraste */
+            color: #495057; /* Color de texto gris oscuro */
+            padding: 30px 0; /* Espaciado interno superior e inferior */
+            font-family: 'Inter', sans-serif; /* Fuente moderna y legible */
+            border-top: 1px solid #e9ecef; /* Línea superior sutil */
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05); /* Sombra suave hacia arriba */
+        }
+
+            /* Estilos para los enlaces dentro del footer */
+            .footer a {
+                color: #007bff; /* Color azul estándar para enlaces */
+                text-decoration: none; /* Quitar subrayado por defecto */
+                transition: color 0.3s ease-in-out; /* Transición suave al pasar el ratón */
+            }
+
+                .footer a:hover {
+                    color: #0056b3; /* Color más oscuro al pasar el ratón */
+                    text-decoration: underline; /* Subrayado al pasar el ratón */
+                }
+
+            /* Estilos para los íconos sociales (si usas la Opción 1) */
+            .footer .social-icons a {
+                font-size: 1.2em; /* Tamaño de los íconos */
+                margin: 0 8px; /* Espaciado entre íconos */
+                color: #6c757d; /* Color gris para los íconos */
+                transition: color 0.3s ease-in-out;
+            }
+
+                .footer .social-icons a:hover {
+                    color: #007bff; /* Color azul al pasar el ratón sobre los íconos */
+                }
+
+            /* Estilos para las listas de enlaces (si usas la Opción 2) */
+            .footer ul.list-unstyled {
+                padding-left: 0;
+                margin-bottom: 0;
+            }
+
+                .footer ul.list-unstyled li {
+                    display: inline-block; /* Muestra los elementos de la lista en línea */
+                    margin: 0 10px; /* Espaciado entre los elementos de la lista */
+                }
+
+        /* Estilos para el footer con fondo oscuro (si usas la Opción 3) */
+        .footer-dark {
+            background-color: #343a40; /* Fondo oscuro */
+            color: #f8f9fa; /* Texto claro */
+        }
+
+            .footer-dark a {
+                color: #adb5bd; /* Enlaces en color gris claro */
+            }
+
+                .footer-dark a:hover {
+                    color: #f8f9fa; /* Enlaces en blanco al pasar el ratón */
+                }
     </style>
 </head>
 <body>
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
             <div class="container-fluid">
-                <!-- Logo/Título -->
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
-                    Supportly
-                </a>
+                <!-- Logo/Título con comportamiento condicional -->
+                @if (usuarioLogueado == null)
+                {
+                    <a class="navbar-brand" asp-area="" asp-controller="Inicio" asp-action="Inicio">
+                        Supportly
+                    </a>
+                }
+                else if (esAdmin)
+                {
+                    <a class="navbar-brand" asp-area="" asp-controller="Dashboard" asp-action="Index">
+                        Supportly
+                    </a>
+                }
+                else
+                {
+                    <a class="navbar-brand" asp-area="" asp-controller="InterfazTicket" asp-action="Index">
+                        Supportly
+                    </a>
+                }
+
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                         data-bs-target="#navbarSupportedContent"
                         aria-controls="navbarSupportedContent" aria-expanded="false"
@@ -99,7 +174,7 @@
                         @if (usuarioLogueado == null)
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+                                <a class="nav-link" asp-area="" asp-controller="Inicio" asp-action="Inicio">Inicio</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="UsuarioLogin" asp-action="Autenticar">Iniciar Sesión</a>
@@ -117,17 +192,17 @@
                                     <a class="nav-link" asp-area="" asp-controller="AdminUsuarios" asp-action="Index">Usuarios</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🔔</a>
+                                    <a class="nav-link" asp-area="" asp-controller="Notificacion" asp-action="MisNotificaciones">🔔</a>
                                 </li>
                             }
                             else
                             {
-                                @* Si está logueado pero NO es admin, podrías mostrar solo “Inicio” u otros enlaces públicos *@
+                                @* Si está logueado pero NO es admin *@
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+                                    <a class="nav-link" asp-area="" asp-controller="InterfazTicket" asp-action="Index">Dashboard</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">🔔</a>
+                                    <a class="nav-link" asp-area="" asp-controller="Notificacion" asp-action="MisNotificaciones">🔔</a>
                                 </li>
                             }
                         }
@@ -162,10 +237,11 @@
         </main>
     </div>
 
-    <footer class="border-top footer text-muted mt-auto">
-        <div class="container text-center py-3">
-            &copy; @DateTime.Now.Year - Proyecto_Supportly -
-            <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="mt-auto py-4 text-white" style="background-color: #343a40;">
+        <div class="container text-center">
+            <p class="mb-2">Proyecto_Supportly - Tu soporte confiable al alcance de tu mano.</p>
+            <p class="mb-0">&copy; @DateTime.Now.Year - Todos los derechos reservados.</p>
+            <p class="mt-2"><a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-white-50">Política de Privacidad</a></p>
         </div>
     </footer>
 

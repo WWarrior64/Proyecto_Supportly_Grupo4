@@ -24,6 +24,7 @@ namespace Proyecto_Supportly.Controllers
         /// - Toma datos del usuario autenticado (desde Session)
         /// - Carga dropdown de Categorias (áreas) y prioridades
         /// </summary>
+        [HttpGet]
         public IActionResult CrearTicket()
         {
             // 1. Verificar que haya un UsuarioId en sesión
@@ -61,7 +62,16 @@ namespace Proyecto_Supportly.Controllers
             var prioridades = new List<string> { "Baja", "Media", "Alta" };
             ViewBag.PrioridadesList = new SelectList(prioridades);
 
-            // 6. Devolver un modelo vacío (o new Tickets()) para que la vista lo utilice
+            // 6) tomar el enlace de TempData
+            if (TempData.ContainsKey("DropboxLink"))
+            {
+                ViewBag.UploadMessage = TempData["UploadMessage"];
+                ViewBag.MessageType = TempData["MessageType"];
+                ViewBag.DropboxLink = TempData["DropboxLink"];
+                ViewBag.UploadedFileName = TempData["UploadedFileName"];
+            }
+
+            // 7. Devolver un modelo vacío (o new Tickets()) para que la vista lo utilice
             return View(new Tickets());
         }
 
@@ -71,7 +81,7 @@ namespace Proyecto_Supportly.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CrearTicket(Tickets ticket, string Area)
+        public async Task<IActionResult> CrearTicket(Tickets ticket, string Area, string DropboxLink, string UploadedFileName)
         {
             // 1. Relevantar datos de usuario en sesión (para recargar en caso de error)
             var usuarioIdEnSesion = HttpContext.Session.GetInt32("UsuarioId");
@@ -122,21 +132,30 @@ namespace Proyecto_Supportly.Controllers
             ticket.FechaCreacion = DateTime.Now;
             ticket.EstadoID = 1; // “Abierto” (ajusta según tus constantes en la DB)
 
-            // La propiedad ticket.Prioridad ya viene enlazada automáticamente 
-            // porque en la vista usas DropDownListFor(model => model.Prioridad, prioridadesList).
-
-            // 5. Validar ModelState completo
             if (!ModelState.IsValid)
             {
                 return View(ticket);
             }
 
-            // 6. Guardar en BD
+            // 5. Guardar el ticket en la BD
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync();
 
+            // 6. Ahora que ya existe ticket.TicketID, guardamos el adjunto si existió un DropboxLink
+            if (!string.IsNullOrEmpty(DropboxLink) && !string.IsNullOrEmpty(UploadedFileName))
+            {
+                var nuevoAdjunto = new Adjuntos
+                {
+                    TicketID = ticket.TicketID,
+                    EnlaceDrive = DropboxLink,
+                    NombreArchivo = UploadedFileName,
+                    FechaCreacion = DateTime.Now
+                };
+                _context.Adjuntos.Add(nuevoAdjunto);
+                await _context.SaveChangesAsync();
+            }
+
             TempData["SuccessMessage"] = "Ticket creado correctamente.";
-            // Redirige donde prefieras, por ejemplo al listado general de tickets:
             return RedirectToAction("Index", "InterfazTicket");
         }
     }

@@ -1,0 +1,111 @@
+﻿@{
+    ViewData["Title"] = "Subir Archivos a Dropbox";
+    // TempData["UploadMessage"] y TempData["MessageType"] se llenan en el controlador
+    var uploadMessage = TempData["UploadMessage"] as string;
+    var messageType = TempData["MessageType"] as string; // "success" o "error"
+    int ticketId = (int)ViewBag.TicketId;
+    int? userId = (int?)ViewBag.UserId;
+    string returnController = (string)ViewBag.ReturnController;
+    string returnAction = (string)ViewBag.ReturnAction;
+}
+
+<style>
+    /* Estilos muy básicos para tarjeta y toast “flotante” */
+    .upload-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 25px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+        .upload-container h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+    .upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+        .upload-form input[type="file"] {
+            padding: 5px;
+        }
+
+        .upload-form button {
+            width: 150px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+            .upload-form button:hover {
+                background-color: #0056b3;
+            }
+
+    /* “Toast” en la esquina superior derecha */
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        min-width: 250px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        z-index: 1050;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+        .toast-notification.success {
+            background-color: #28a745;
+        }
+
+        .toast-notification.error {
+            background-color: #dc3545;
+        }
+
+        .toast-notification a {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+    .toast-close {
+        margin-left: 10px;
+        cursor: pointer;
+        font-size: 1.2em;
+    }
+</style>
+
+<div class="upload-container">
+    <h2>@ViewData["Title"]</h2>
+    <form asp-action="UploadFile" asp-controller="Cargar" method="post" enctype="multipart/form-data" class="upload-form">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="ticketId" value="@ticketId" />
+        <input type="hidden" name="userId" value="@userId" />
+        <input type="hidden" name="returnController" value="@returnController" />
+        <input type="hidden" name="returnAction" value="@returnAction" />
+        <input type="file" name="file" required />
+        <button type="submit">Subir Archivo</button>
+    </form>
+</div>
+
+@if (!string.IsNullOrEmpty(uploadMessage))
+{
+    <div class="toast-notification @messageType" id="toastNotification">
+        <span>
+            @Html.Raw(uploadMessage)
+        </span>
+        <span class="toast-close" onclick="document.getElementById('toastNotification').style.display='none'">×</span>
+    </div>
+}

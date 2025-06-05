@@ -91,6 +91,15 @@ namespace Proyecto_Supportly.Controllers
             // 7. Pasar la lista de “mensajes” a la vista
             ViewBag.ChatMessages = mensajes;
             ViewBag.UserLoggedInName = (await _context.Usuarios.FindAsync(userId))?.Nombre ?? "Invitado";
+
+            if (TempData.ContainsKey("DropboxLink"))
+            {
+                ViewBag.UploadMessage = TempData["UploadMessage"];
+                ViewBag.MessageType = TempData["MessageType"];
+                ViewBag.DropboxLink = TempData["DropboxLink"];
+                ViewBag.UploadedFileName = TempData["UploadedFileName"];
+            }
+
             return View();
         }
 
@@ -100,7 +109,7 @@ namespace Proyecto_Supportly.Controllers
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SendMessage(int ticketId, int userId, string messageContent)
+        public async Task<IActionResult> SendMessage(int ticketId, int userId, string messageContent, string DropboxLink, string UploadedFileName)
         {
             if (ticketId <= 0 || userId <= 0 || string.IsNullOrWhiteSpace(messageContent))
                 return RedirectToAction("Chat", new { id = ticketId, userId = userId });
@@ -120,6 +129,19 @@ namespace Proyecto_Supportly.Controllers
             };
             _context.Comentarios.Add(comentario);
             await _context.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(DropboxLink) && !string.IsNullOrEmpty(UploadedFileName))
+            {
+                var nuevoAdjunto = new Adjuntos
+                {
+                    TicketID = ticket.TicketID,
+                    EnlaceDrive = DropboxLink,
+                    NombreArchivo = UploadedFileName,
+                    FechaCreacion = DateTime.Now
+                };
+                _context.Adjuntos.Add(nuevoAdjunto);
+                await _context.SaveChangesAsync();
+            }
 
             return RedirectToAction("Chat", new { id = ticketId, userId = userId });
         }

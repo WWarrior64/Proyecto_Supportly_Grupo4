@@ -63,24 +63,27 @@ namespace Proyecto_Supportly.Controllers
 
             if (esEmpleado)
             {
-                // 6. Para empleados, cargamos “tickets asignados”.
-                // Aquí hemos asumido que “asignados” son aquellos que NO haya creado el empleado.
-                // Ajusta la condición según tu lógica real de asignación.
+                // 6. Para empleados, cargamos “tickets asignados” de la tabla Asignaciones,
+                //    filtrando solo aquellos donde a.UsuarioAsignadoID == userId
+                //    y donde el ticket NO esté cerrado, por ejemplo.
                 var assignedTickets = await (
-                    from t in _context.Tickets.AsNoTracking()
-                    join e in _context.Estados.AsNoTracking() on t.EstadoID equals e.EstadoID
-                    where t.UsuarioCreadorID != userId.Value
+                    from a in _context.Asignaciones.AsNoTracking()
+                    join t in _context.Tickets.AsNoTracking() on a.TicketID equals t.TicketID
+                    join e in _context.Estados.AsNoTracking() on t.EstadoID equals e.EstadoID into estadoJoin2
+                    from e in estadoJoin2.DefaultIfEmpty()
+                    where a.UsuarioAsignadoID == userId.Value
+                          && a.ResponsablePrincipal == true // solo responsable principal
                     orderby t.FechaCreacion descending
                     select new
                     {
                         TicketID = t.TicketID,
                         Titulo = t.Titulo,
                         FechaUltimaInteraccion = t.FechaCreacion,
-                        EstadoTicket = e.Nombre
+                        EstadoTicket = (t.EstadoID != null ? e.Nombre : "Sin estado")
                     }
                 )
                 .Take(20)
-                .ToListAsync();
+                .ToListAsync<dynamic>();
 
                 ViewBag.AssignedTickets = assignedTickets;
             }

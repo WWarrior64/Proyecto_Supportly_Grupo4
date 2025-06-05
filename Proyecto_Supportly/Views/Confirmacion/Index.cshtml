@@ -1,0 +1,21 @@
+﻿@{
+    ViewData["Title"] = "Confirmación de Ticket";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="alert alert-success mt-5" role="alert">
+                <h4 class="alert-heading">¡Ticket Creado Exitosamente!</h4>
+                <p>Su solicitud de soporte ha sido recibida y se ha creado un nuevo ticket.</p>
+                <hr>
+                <p class="mb-0">Nuestro equipo de soporte revisará su solicitud y se pondrá en contacto con usted pronto.</p>
+            </div>
+            <div class="text-center mt-4">
+                <a href="@Url.Action("Crear", "Ticket")" class="btn btn-primary">Crear otro Ticket</a>
+                <a href="@Url.Action("Crear", "Tickets")" class="btn btn-primary">Crear otro Ticket</a> *1
+                <a href="@Url.Action("Index", "Home")" class="btn btn-secondary ms-2">Volver al Inicio</a>
+            </div>
+        </div>
+    </div>
+</div>

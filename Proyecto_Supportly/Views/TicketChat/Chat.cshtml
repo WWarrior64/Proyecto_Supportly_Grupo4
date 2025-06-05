@@ -11,6 +11,10 @@
     var companyName = ViewBag.CompanyName as string;
     var userLoggedInName = ViewBag.UserLoggedInName as string;
     var sessionUserId = (int)ViewBag.SessionUserId; // ID del usuario en sesión
+    var uploadMessage = ViewBag.UploadMessage as string;
+    var messageType = ViewBag.MessageType as string;
+    var dropboxLink = ViewBag.DropboxLink as string;
+    var uploadedFileName = ViewBag.UploadedFileName as string;
 }
 
 <!DOCTYPE html>
@@ -345,6 +349,44 @@
             }
         </div>
 
+        <!-- SECCIÓN “AÑADIR SCREENSHOT” -->
+        <div class="upload-container">
+            <h3>¿Quieres adjuntar una captura o documento?</h3>
+            <form asp-action="UploadFile"
+                  asp-controller="Cargar"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="upload-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ticketId" value="@ticketId" />
+                <input type="hidden" name="userId" value="@sessionUserId" />
+                <input type="hidden" name="returnController" value="TicketChat" />
+                <input type="hidden" name="returnAction" value="Chat" />
+
+                <input type="file" name="file" required />
+                <button type="submit">Subir a Dropbox</button>
+            </form>
+        </div>
+
+        <!-- Toast de notificación si se cargó algo -->
+        @if (!string.IsNullOrEmpty(uploadMessage))
+        {
+            <div class="toast-notification @messageType" id="toastNotification">
+                <span>@Html.Raw(uploadMessage)</span>
+                <span class="toast-close" onclick="document.getElementById('toastNotification').style.display='none'">×</span>
+            </div>
+        }
+
+        <!-- Mostrar el enlace recién subido -->
+        @if (!string.IsNullOrEmpty(dropboxLink))
+        {
+            <div class="file-link-block">
+                <strong>Enlace al archivo subido:</strong><br />
+                <a href="@dropboxLink" target="_blank">@dropboxLink</a><br />
+                <em>Nombre de archivo:</em> @uploadedFileName
+            </div>
+        }
+
         @* --- Formulario para enviar un nuevo comentario --- *@
         <div class="reply-section">
             @using (Html.BeginForm("SendMessage", "TicketChat", FormMethod.Post))
@@ -353,11 +395,20 @@
                 <input type="hidden" name="ticketId" value="@ticketId" />
                 <input type="hidden" name="userId" value="@sessionUserId" />
 
+                @if (!string.IsNullOrEmpty(dropboxLink) && !string.IsNullOrEmpty(uploadedFileName))
+                {
+                    <input type="hidden" name="DropboxLink" value="@dropboxLink" />
+                    <input type="hidden" name="UploadedFileName" value="@uploadedFileName" />
+                }
+
                 <textarea name="messageContent" placeholder="Escriba su mensaje aquí..." required></textarea>
 
                 <div class="reply-buttons">
                     <button type="submit" class="btn-reply btn-send">Enviar</button>
-                    <button type="button" class="btn-reply btn-attach">Añadir screenshot</button>
+                    <button type="button" class="btn btn-secondary"
+                            onclick="openScreenshotUploader()">
+                        Añadir screenshot
+                    </button>
                 </div>
             }
         </div>
@@ -373,5 +424,17 @@
             }
         </div>
     </div>
+
+    @section Scripts {
+        <script src="~/Scripts/jquery-3.6.0.min.js"></script>
+        <script src="~/Scripts/jquery.validate.min.js"></script>
+        <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
+
+        <script>
+            function openScreenshotUploader() {
+                alert('Puedes subir tu captura en la sección “Subir a Dropbox” ubicada arriba.');
+            }
+        </script>
+    }
 </body>
 </html>

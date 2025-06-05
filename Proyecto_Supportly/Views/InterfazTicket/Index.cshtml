@@ -9,6 +9,7 @@
 
     var isEmployee = ViewBag.IsEmployee as bool? ?? false;
     var assignedTickets = ViewBag.AssignedTickets as List<dynamic> ?? new List<dynamic>();
+    var countAssigned = assignedTickets?.Count ?? 0;
 
     if (userTickets == null) { userTickets = new List<dynamic>(); }
 }
@@ -228,6 +229,33 @@
     </style>
 </head>
 <body>
+    @*  NOTIFICACIÓN *@
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="toast-container">
+            <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert"
+                 aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        @TempData["SuccessMessage"]
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"
+                            aria-label="Cerrar"></button>
+                </div>
+            </div>
+        </div>
+
+        <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Instanciamos y mostramos el toast en cuanto se carga este fragmento
+            var toastEl = document.getElementById('liveToast');
+            if (toastEl) {
+                var toast = new bootstrap.Toast(toastEl, { delay: 5000 });
+                toast.show();
+            }
+        </script>
+    }
 
     <div class="main-content">
         @if (ViewBag.SuccessMessage != null)
@@ -277,15 +305,13 @@
             </tbody>
         </table>
 
-        @if (isEmployee)
+        @if (isEmployee && assignedTickets != null)
         {
             <div class="assigned-tickets-section">
-                @{
-                    var countAssigned = assignedTickets.Count;
-                }
-                <h2>Tienes @countAssigned Ticket@(countAssigned == 1 ? "" : "s") asignad@(countAssigned == 1 ? "o" : "os") a revisar</h2>
-                @* Ajusta el action/controller al que quieras que apunte realmente *@
-                @Html.ActionLink("Ver Tickets asignados", "AssignedTickets", "Home", null, new { @class = "btn-view-assigned" })
+                <h2>
+                    Tienes @countAssigned Ticket@(countAssigned == 1 ? "" : "s") asignad@(countAssigned == 1 ? "o" : "os") a revisar
+                </h2>
+                @Html.ActionLink("Ver Tickets asignados", "MisTicketsAsignados", "VerTickets", null, new { @class = "btn-view-assigned" })
             </div>
         }
     </div>

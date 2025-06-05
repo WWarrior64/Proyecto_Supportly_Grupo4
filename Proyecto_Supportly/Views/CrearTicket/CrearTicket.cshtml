@@ -1,17 +1,26 @@
 ﻿@model Proyecto_Supportly.Models.Tickets
 @{
     ViewBag.Title = ViewBag.Title ?? "Crear Nuevo Ticket";
-    Layout = "~/Views/Principal/LayoutPrincipal.cshtml"; // Ensure this path is correct for your project
-
+    Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
     // User data from ViewBag
     var usuarioNombres = ViewBag.UsuarioNombres as string;
     var usuarioEmail = ViewBag.UsuarioEmail as string;
     var usuarioTelefono = ViewBag.UsuarioTelefono as string;
     var usuarioCreadorID = (int)ViewBag.UsuarioCreadorID;
 
+    var ticketId = 0; // No existe aún, pero enviamos ticketId=0 o -1, no importa
+    var userId = (int)ViewBag.UsuarioCreadorID;
+
     // Dropdown lists from ViewBag
     var areasList = ViewBag.AreasList as SelectList;
     var prioridadesList = ViewBag.PrioridadesList as SelectList;
+
+    // Mensajes de Dropbox (de TempData)
+    var uploadMessage = ViewBag.UploadMessage as string;
+    var messageType = ViewBag.MessageType as string;       // "success" o "error"
+    var dropboxLink = ViewBag.DropboxLink as string;
+    var uploadedFileName = ViewBag.UploadedFileName as string;
+}
 }
 
 <!DOCTYPE html>
@@ -215,11 +224,103 @@
             margin-bottom: 15px;
             font-weight: bold;
         }
+
+        .upload-container {
+            max-width: 600px;
+            margin: 0 auto 30px; /* Separación debajo */
+            padding: 25px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+            .upload-container h3 {
+                margin-bottom: 20px;
+                color: #333;
+            }
+
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+            .upload-form input[type="file"] {
+                padding: 5px;
+            }
+
+            .upload-form button {
+                width: 180px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 10px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+
+                .upload-form button:hover {
+                    background-color: #0056b3;
+                }
+
+
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 250px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            z-index: 1050;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+            .toast-notification.success {
+                background-color: #28a745;
+            }
+
+            .toast-notification.error {
+                background-color: #dc3545;
+            }
+
+            .toast-notification a {
+                color: #fff;
+                text-decoration: underline;
+            }
+
+        .toast-close {
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+
+        .file-link-block {
+            margin: 15px 0;
+            padding: 12px;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+
+            .file-link-block a {
+                color: #007bff;
+                text-decoration: underline;
+            }
     </style>
 </head>
-<body>
 
+<body>
     <div class="main-content">
+
         <div class="ticket-header">
             <h2>Crear nuevo ticket de soporte</h2>
             <p>
@@ -232,73 +333,134 @@
             </p>
         </div>
 
-        @* Muestra errores de modelo en conjunto *@
-        @Html.ValidationSummary(excludePropertyErrors: false, message: "", htmlAttributes: new { @class = "text-danger validation-summary-errors" })
+        <!-- Sección: Subir a Dropbox -->
+        <div class="upload-container">
+            <h3>¿Tienes capturas o documentos para adjuntar?</h3>
+            <form asp-action="UploadFile"
+                  asp-controller="Cargar"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="upload-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ticketId" value="@ticketId" />
+                <input type="hidden" name="userId" value="@userId" />
+                <input type="hidden" name="returnController" value="CrearTicket" />
+                <input type="hidden" name="returnAction" value="CrearTicket" />
+                <input type="file" name="file" required />
+                <button type="submit">Subir a Dropbox</button>
+            </form>
+        </div>
+
+        <!-- Toast de Notificación -->
+        @if (!string.IsNullOrEmpty(uploadMessage))
+        {
+            <div class="toast-notification @messageType" id="toastNotification">
+                <span>@Html.Raw(uploadMessage)</span>
+                <span class="toast-close" onclick="document.getElementById('toastNotification').style.display='none'">×</span>
+            </div>
+        }
+
+        <!-- Mostrar el enlace generado si existe -->
+        @if (!string.IsNullOrEmpty(dropboxLink))
+        {
+            <div class="file-link-block">
+                <strong>Enlace al archivo subido:</strong><br />
+                <a href="@dropboxLink" target="_blank">@dropboxLink</a><br />
+                <em>Nombre de archivo:</em> @uploadedFileName
+            </div>
+        }
 
         @using (Html.BeginForm("CrearTicket", "CrearTicket", FormMethod.Post, new { autocomplete = "off" }))
         {
             @Html.AntiForgeryToken()
-            @Html.Hidden("UsuarioCreadorID", usuarioCreadorID) @* Pass the UserID from ViewBag as a hidden field **@
+            @Html.Hidden("UsuarioCreadorID", usuarioCreadorID)
+
+            <!-- Si existe dropboxLink, lo envío oculto para poder guardarlo luego -->
+            @if (!string.IsNullOrEmpty(dropboxLink) && !string.IsNullOrEmpty(uploadedFileName))
+            {
+                <input type="hidden" name="DropboxLink" value="@dropboxLink" />
+                <input type="hidden" name="UploadedFileName" value="@uploadedFileName" />
+            }
 
             <div class="form-row">
                 <div class="form-group">
                     @Html.Label("Nombre Completo", "Nombre Completo")
-                    @Html.TextBox("Nombres", usuarioNombres, new { @class = "form-control", @readonly = "readonly", placeholder = "Datos del usuario que se sacaran del inicio de seccion" }) @* Data from session*@
+                    @Html.TextBox("Nombres", usuarioNombres,
+                             new { @class = "form-control", @readonly = "readonly" })
                 </div>
             </div>
 
             <div class="form-row">
                 <div class="form-group">
                     @Html.Label("CorreoElectronico", "Correo electrónico")
-                    @Html.TextBox("CorreoElectronico", usuarioEmail, new { @class = "form-control", type = "email", @readonly = "readonly", placeholder = "Datos del usuario que se sacaran del inicio de seccion" }) @* Data from session*@
+                    @Html.TextBox("CorreoElectronico", usuarioEmail,
+                             new { @class = "form-control", type = "email", @readonly = "readonly" })
                 </div>
                 <div class="form-group">
                     @Html.Label("Telefono", "Teléfono")
-                    @Html.TextBox("Telefono", usuarioTelefono, new { @class = "form-control", @readonly = "readonly", placeholder = "Datos del usuario que se sacaran del inicio de seccion" }) @* Data from session*@
+                    @Html.TextBox("Telefono", usuarioTelefono,
+                             new { @class = "form-control", @readonly = "readonly" })
                 </div>
             </div>
 
             <div class="form-group">
-                @Html.LabelFor(model => model.Titulo, "Nombre del Ticket") @* This is the "Nombre del Ticket" in the image*@
-                @Html.TextBoxFor(model => model.Titulo, new { @class = "form-control", placeholder = "Nombre del Ticket puede ser el referenciado a lo que necesita" })
-                @Html.ValidationMessageFor(model => model.Titulo, "", new { @class = "text-danger" })
+                @Html.LabelFor(model => model.Titulo, "Nombre del Ticket")
+                @Html.TextBoxFor(model => model.Titulo,
+                         new { @class = "form-control", placeholder = "Asunto del ticket" })
+                @Html.ValidationMessageFor(model => model.Titulo,
+                         "", new { @class = "text-danger" })
             </div>
 
             <div class="form-group">
-                @Html.LabelFor(model => model.CategoriaID, "Seleccione al área a la que aplica")
-                @Html.DropDownList("Area", areasList, "-- Seleccione un área --", new { @class = "form-control" }) @* "Area" as parameter name for FormCollection*@
-                @Html.ValidationMessageFor(model => model.CategoriaID, "", new { @class = "text-danger" })
+                @Html.LabelFor(model => model.CategoriaID, "Seleccione al área")
+                @Html.DropDownList("Area", areasList, "-- Seleccione un área --",
+                         new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.CategoriaID,
+                         "", new { @class = "text-danger" })
             </div>
 
             <div class="form-group">
                 @Html.LabelFor(model => model.Prioridad, "Seleccione la prioridad")
-                @Html.DropDownListFor(model => model.Prioridad, prioridadesList, "-- Seleccione la prioridad --", new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.Prioridad, "", new { @class = "text-danger" })
+                @Html.DropDownListFor(model => model.Prioridad,
+                         prioridadesList,
+                         "-- Seleccione la prioridad --",
+                         new { @class = "form-control" })
+                @Html.ValidationMessageFor(model => model.Prioridad,
+                         "", new { @class = "text-danger" })
             </div>
 
             <div class="form-group">
-                @Html.LabelFor(model => model.Descripcion, "Describa de manera detallada para que un miembro del soporte le pueda ayudar")
-                @Html.TextAreaFor(model => model.Descripcion, new { @class = "form-control", rows = 6, placeholder = "TextArea con el cual se puede especificar a detalle el ticket de soporte" })
-                @Html.ValidationMessageFor(model => model.Descripcion, "", new { @class = "text-danger" })
+                @Html.LabelFor(model => model.Descripcion, "Descripción detallada")
+                @Html.TextAreaFor(model => model.Descripcion,
+                         new
+                         {
+                             @class = "form-control",
+                             rows = 6,
+                             placeholder = "Explica tu problema en detalle aquí..."
+                         })
+                @Html.ValidationMessageFor(model => model.Descripcion,
+                         "", new { @class = "text-danger" })
             </div>
 
             <div class="button-group">
                 <button type="submit" class="btn btn-primary">Enviar Ticket</button>
-                <button type="button" class="btn btn-secondary" onclick="openScreenshotUploader()">Añadir screenshot</button>
+                <button type="button" class="btn btn-secondary"
+                        onclick="openScreenshotUploader()">
+                    Añadir screenshot
+                </button>
             </div>
         }
     </div>
 
+
     @section Scripts {
-        <script src="~/Scripts/jquery-3.6.0.min.js"></script> @* Ensure this path is correct **@
-        <script src="~/Scripts/jquery.validate.min.js"></script> @* Ensure this path is correct **@
-        <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script> @* Ensure this path is correct **@
+        <script src="~/Scripts/jquery-3.6.0.min.js"></script>
+        <script src="~/Scripts/jquery.validate.min.js"></script>
+        <script src="~/Scripts/jquery.validate.unobtrusive.min.js"></script>
 
         <script>
             function openScreenshotUploader() {
-                alert('Se abrirá una ventana para subir imágenes. En una implementación real, esto sería un modal o una nueva página.');
-                // Here you would implement the logic to open a file upload dialog or a new page/modal
-                // For example: window.open('/Upload/Screenshot', '_blank');
+                alert('Puedes subir tu captura en la sección “Subir a Dropbox” ubicada arriba.');
             }
         </script>
     }

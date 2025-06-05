@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Proyecto_Supportly.Models;
 using Proyecto_Supportly.Servicios;
 using System.ComponentModel.DataAnnotations;
@@ -40,17 +41,31 @@ namespace Proyecto_Supportly.Controllers
                            && u.Contraseña == txtpassword
                            select u).FirstOrDefault();
 
-            //Si el usuario existe con todas sus validaciones
+            //Si el usuario existe con todas sus validaciones 
             if (usuario != null)
             {
-                //Se crean las variables de sesión
+                // Se crean las variables de sesión
                 HttpContext.Session.SetInt32("UsuarioId", usuario.UsuarioID);
                 HttpContext.Session.SetString("Nombre", usuario.Nombre);
                 HttpContext.Session.SetString("Correo", usuario.Email);
-                HttpContext.Session.SetString("Tipo de Usuario", usuario.TipoUsuario);
+                HttpContext.Session.SetString("TipoUsuario", usuario.TipoUsuario);
 
-                //Se redirecciona al método de Index del controlador Home
-                return RedirectToAction("Index", "Home");
+                // Obtener nombre del rol desde BD para asegurarnos
+                var rol = _DbContext.Roles
+                            .AsNoTracking()
+                            .FirstOrDefault(r => r.RolID == usuario.RolID)?.Nombre;
+
+                // Redirigir según rol:
+                if (string.Equals(rol, "Administrador", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Si es Administrador → Dashboard/Index
+                    return RedirectToAction("Index", "Dashboard");
+                }
+                else
+                {
+                    // Si NO es Administrador (empleado/técnico) → InterfazTicket/Index
+                    return RedirectToAction("Index", "InterfazTicket");
+                }
             }
 
             ViewData["ErrorMessage"] = "Error, usuario invalido!!!!";
