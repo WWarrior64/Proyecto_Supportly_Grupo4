@@ -6,12 +6,11 @@
 
     var currentUser = Model ?? (ViewBag.Usuario as Proyecto_Supportly.Models.Usuarios);
 
-    // If external users also have roles, uncomment and populate rolesList
     var rolesList = ViewBag.RolesLista as SelectList;
 }
 
 <style>
-    /* Estilos básicos para el formulario (mueve a un CSS externo en producción) */
+    /* Estilos básicos para el formulario */
     body {
         font-family: Arial, sans-serif;
         background-color: #f0f2f5;
@@ -78,7 +77,7 @@
     }
 
     .btn-submit-user {
-        background-color: #6200ea; /* Purple from your image */
+        background-color: #6200ea;
         color: white;
         padding: 12px 20px;
         border: none;
@@ -116,7 +115,7 @@
         color: #dc3545;
     }
 
-    /* Estilos para el encabezado (similares a la imagen) */
+    /* Estilos para el encabezado */
     .page-header-nav {
         background-color: #fff; /* White background for nav */
         border-bottom: 1px solid #ddd;
@@ -135,7 +134,7 @@
         }
 
             .page-header-nav .logo-area .logo-icon {
-                font-size: 24px; /* Adjust size as needed */
+                font-size: 24px; /* Adjust size */
                 color: #6200ea; /* Purple color for icon */
                 margin-right: 8px;
             }
@@ -171,7 +170,7 @@
             }
 
             .page-header-nav .user-actions .sign-out-btn {
-                background-color: #6200ea; /* Purple from your image */
+                background-color: #6200ea; /* Purple */
                 color: white;
                 padding: 8px 15px;
                 border-radius: 5px;
@@ -184,7 +183,7 @@
                 }
 
     .page-title-container {
-        text-align: center; /* Center the title as per the image */
+        text-align: center; 
         margin-bottom: 30px;
         font-size: 24px;
         color: #333;
@@ -219,7 +218,7 @@
         </div>
 
         <div class="form-group">
-            @Html.Label("ContraseñaNueva", "Contraseña:") @* Changed label to "Contraseña" as per image *@
+            @Html.Label("ContraseñaNueva", "Contraseña:") @* Changed label to "Contraseña" *@
             <div class="password-container">
                 @Html.Password("ContraseñaNueva", null, new { @class = "form-control", placeholder = "Dejar en blanco para no cambiar", id = "passwordField" })
                 <span class="password-toggle-icon" onclick="togglePasswordVisibility('passwordField', this)">👁️</span>

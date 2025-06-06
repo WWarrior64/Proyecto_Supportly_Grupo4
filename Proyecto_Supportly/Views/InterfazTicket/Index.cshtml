@@ -1,5 +1,4 @@
 ﻿@{
-    // No @model directive as requested
     ViewBag.Title = ViewBag.Title ?? "Dashboard";
     Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
 
@@ -21,7 +20,6 @@
     <title>@ViewBag.Title</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ40JuKCqigSyOXoligTfP4K1m5b2R0eB4o3gN6l9x5L3f06wR5gM4uC/L9o0b4m0n0F0Z0M0L0A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        /* Shared Header/Navigation Styles (from previous examples) */
         .page-header-nav {
             background-color: #fff; /* White background for nav */
             border-bottom: 1px solid #ddd;
@@ -44,12 +42,12 @@
             }
 
                 .page-header-nav .logo-area .logo-icon {
-                    font-size: 24px; /* Adjust size as needed */
+                    font-size: 24px; /* Adjust size */
                     color: #6200ea; /* Purple color for icon */
                     margin-right: 8px;
                 }
 
-                .page-header-nav .logo-area span { /* For "Support empresa de IT" text */
+                .page-header-nav .logo-area span { 
                     color: #333;
                     font-size: 1.2em;
                     font-weight: bold;
@@ -102,7 +100,7 @@
 
         .main-content {
             padding: 20px;
-            max-width: 900px; /* Adjust max-width as needed */
+            max-width: 900px; /* Adjust max-width */
             margin: 30px auto; /* Margin from the top navigation */
             background-color: #fff;
             border-radius: 8px;

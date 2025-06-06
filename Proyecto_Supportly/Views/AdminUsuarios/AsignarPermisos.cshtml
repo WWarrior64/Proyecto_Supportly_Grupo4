@@ -1,5 +1,4 @@
 ﻿@{
-    // No @model directive as requested, relying on ViewBag
     ViewBag.Title = ViewBag.Title ?? "Asignación de Permisos";
     Layout = "~/Views/Principal/LayoutPrincipal.cshtml";
 
@@ -8,7 +7,6 @@
     var userId = (int)ViewBag.UsuarioID;
     var userName = (string)ViewBag.UsuarioNombre;
 
-    // Ensure lists are not null
     if (allPermissions == null) { allPermissions = new List<Proyecto_Supportly.Models.Permisos>(); }
     if (assignedPermissionIDs == null) { assignedPermissionIDs = new List<int>(); }
 }
@@ -19,7 +17,6 @@
     <meta name="viewport" content="width=device-width" />
     <title>@ViewBag.Title</title>
     <style>
-        /* Reusing styles from previous examples and adding specific ones for the table */
         body {
             font-family: Arial, sans-serif;
             background-color: #f0f2f5;
@@ -109,7 +106,6 @@
             color: #333;
         }
 
-        /* Table specific styles */
         .permissions-table {
             width: 100%;
             border-collapse: collapse;
@@ -139,11 +135,11 @@
 
             .permissions-table td.checkbox-cell {
                 text-align: center;
-                width: 100px; /* Fixed width for checkbox columns */
+                width: 100px;
             }
 
             .permissions-table input[type="checkbox"] {
-                transform: scale(1.2); /* Slightly larger checkboxes */
+                transform: scale(1.2);
                 margin: 0;
                 cursor: pointer;
             }
@@ -185,7 +181,7 @@
             }
 
         .btn-select-all {
-            background-color: #007bff; /* Blue as in your image */
+            background-color: #007bff;
             color: white;
         }
 

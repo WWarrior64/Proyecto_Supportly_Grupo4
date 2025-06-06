@@ -1,13 +1,12 @@
 ﻿@model Proyecto_Supportly.Models.Usuarios
 @{
     ViewBag.Title = "Creación de Usuario Interno";
-    // Layout = "~/Views/Shared/_Layout.cshtml"; // Asumiendo un layout principal
 
     var rolesList = ViewBag.RolesLista as SelectList;
 }
 
 <style>
-    /* Estilos básicos para el formulario (mueve a un CSS externo en producción) */
+    /* Estilos básicos para el formulario */
     .form-container-card {
         background-color: #fff;
         padding: 30px;
@@ -100,7 +99,7 @@
         color: #dc3545;
     }
 
-    /* Estilos para el encabezado (similares a la imagen) */
+    /* Estilos para el encabezado */
     .page-header-nav {
         background-color: #343a40; /* Color oscuro para la barra de navegación */
         padding: 10px 20px;

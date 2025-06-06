@@ -66,7 +66,7 @@ namespace Proyecto_Supportly.Controllers
             ViewBag.EstadosList = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(listaEstados, "EstadoID", "Nombre");
 
             // 4) Construir la lista de tickets según el rol
-            //    Filtramos solo los tickets que NO estén cerrados (EstadoID != 3)
+            //    Filtramos solo los tickets que NO estén cerrados (EstadoID != 4)
             const int ESTADO_CERRADO = 4;
 
             List<dynamic> listaConJoin;
@@ -146,7 +146,7 @@ namespace Proyecto_Supportly.Controllers
                 ViewBag.SelectedTicket = null;
             }
 
-            // 6) Cargar comentarios del ticket seleccionado (si aplica)
+            // 6) Cargar comentarios del ticket seleccionado
             if (ticketId.HasValue)
             {
                 var comentariosBD = (from c in _context.Comentarios

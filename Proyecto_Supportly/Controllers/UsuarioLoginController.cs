@@ -49,7 +49,7 @@ namespace Proyecto_Supportly.Controllers
             }
 
             // 3) Si existe, verificamos si está activo (campo booleano Activo == true)
-            if (!usuario.EstadoUsuario)  // <-- Aquí asumimos que la propiedad se llama "Activo"
+            if (!usuario.EstadoUsuario)
             {
                 ViewData["ErrorMessage"] = "Tu cuenta está inactiva. Contacta al administrador.";
                 return View();
