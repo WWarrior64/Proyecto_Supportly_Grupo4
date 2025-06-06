@@ -35,6 +35,7 @@ namespace Proyecto_Supportly.Controllers
             // 2. Poblar dropdowns (empleados y meses)
             ViewBag.AvailableEmployees = new SelectList(
                 await _context.Usuarios
+                    .Where(u => u.TipoUsuario == "Interno")
                     .OrderBy(u => u.Nombre)
                     .Select(u => new { u.UsuarioID, Texto = u.Nombre + " (" + u.Email + ")" })
                     .ToListAsync(),
